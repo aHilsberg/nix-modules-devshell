@@ -21,17 +21,23 @@
     ...
   }:
     flake-parts.lib.mkFlake {inherit inputs;} (
-      {flake-parts-lib, ...}: let
+      {
+        flake-parts-lib,
+        self,
+        withSystem,
+        ...
+      }: let
         inherit (flake-parts-lib) importApply;
         devshellFlakeModule = importApply ./flake-module.nix {
           inherit (inputs) import-tree;
-          inherit projectLib;
+          inherit projectLib withSystem;
         };
         projectLib = import ./lib.nix {inherit (nixpkgs) lib;};
       in {
         _module.args.projectLib = projectLib;
         imports = [
           ./pkgs.nix
+          (inputs.import-tree ./packages)
           devshellFlakeModule
         ];
 
@@ -44,6 +50,8 @@
         flake.flakeModules.default = devshellFlakeModule;
 
         perSystem = {pkgs, ...}: {
+          formatting.enable = false;
+
           devshells.default = {
             packages = [pkgs.hello];
 
@@ -54,9 +62,14 @@
               }
             ];
 
-            formatting.enable = false; # TODO move to flake scope
-            git-hooks.enable = false; # TODO move to flake scope
-            dotnet.enable = false;
+            # git-hooks.enable = false; # TODO move to flake scope
+            dotnet = {
+              enable = true;
+              sdk = pkgs.dotnetCorePackages.combinePackages [
+                pkgs.dotnetCorePackages.sdk_8_0
+                pkgs.dotnetCorePackages.sdk_10_0
+              ];
+            };
           };
         };
       }

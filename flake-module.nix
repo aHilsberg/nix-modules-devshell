@@ -1,6 +1,7 @@
 localFlake @ {
   import-tree,
   projectLib,
+  withSystem,
 }: {
   lib,
   flake-parts-lib,
@@ -32,6 +33,11 @@ localFlake @ {
 
           specialArgs = {
             inherit pkgs system projectLib;
+            # Provide custom packages - accessible in submodules
+            # see https://flake.parts/dogfood-a-reusable-module.html
+            customPackages = localFlake.withSystem system (
+              {config, ...}: config.packages
+            );
           };
         }
       );

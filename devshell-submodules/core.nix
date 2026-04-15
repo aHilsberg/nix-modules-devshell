@@ -1,5 +1,10 @@
-{lib, ...}: {
-  options = {
+{
+  lib,
+  pkgs,
+  config,
+  ...
+}: let
+  shellOptions = {
     name = lib.mkOption {
       type = lib.types.nullOr lib.types.str;
       default = null;
@@ -22,12 +27,7 @@
 
           value = lib.mkOption {
             type = with lib.types;
-              nullOr (oneOf [
-                str
-                int
-                bool
-                package
-              ]);
+              nullOr (oneOf [str int bool package]);
             default = null;
             description = "Shell-escaped value to set";
           };
@@ -60,20 +60,20 @@
       default = [];
       description = "Environment variables exported in the shell.";
     };
-
-    build.shell = lib.mkOption {
-      type = lib.types.package;
-      internal = true;
-      readOnly = true;
-      description = "Final built shell derivation.";
-    };
   };
 
-  config.build.shell = let
-    devshellConfig =
-      builtins.intersectAttrs
-      (lib.functionArgs pkgs.devshell.mkShell)
-      config;
-  in
-    pkgs.devshell.mkShell devshellConfig;
+  devshellConfig = builtins.intersectAttrs shellOptions config;
+in {
+  options =
+    shellOptions
+    // {
+      build.shell = lib.mkOption {
+        type = lib.types.package;
+        internal = true;
+        readOnly = true;
+        description = "Final built shell derivation.";
+      };
+    };
+
+  config.build.shell = pkgs.devshell.mkShell devshellConfig;
 }
