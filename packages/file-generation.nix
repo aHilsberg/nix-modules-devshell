@@ -1,9 +1,4 @@
-{
-  flake-parts-lib,
-  lib,
-  inputs,
-  ...
-}: {
+{inputs, ...}: {
   imports = [
     inputs.files.flakeModules.default
   ];

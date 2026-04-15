@@ -3,7 +3,6 @@
   lib,
   projectLib,
   inputs,
-  config,
   ...
 }: {
   imports = [

@@ -26,10 +26,7 @@
     testing.snapshots = lib.mkEnableOption "snapshot testing support (adds Verify.Terminal tool)";
   };
 
-  config = lib.mkIf config.dotnet.enable (let
-    devshellDir = config.package; # https://github.com/numtide/devshell/blob/main/modules/devshell.nix
-    nugetDir = "${devshellDir}/local-nuget";
-  in {
+  config = lib.mkIf config.dotnet.enable {
     packages =
       [
         config.dotnet.sdk
@@ -82,5 +79,5 @@
         };
       };
     };
-  });
+  };
 }

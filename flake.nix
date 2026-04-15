@@ -24,7 +24,6 @@
     flake-parts.lib.mkFlake {inherit inputs;} (
       {
         flake-parts-lib,
-        self,
         withSystem,
         ...
       }: let

@@ -1,4 +1,4 @@
-localFlake @ {
+{
   import-tree,
   projectLib,
   withSystem,
@@ -45,7 +45,7 @@ localFlake @ {
               inherit pkgs system projectLib;
               # Provide custom packages - accessible in submodules
               # see https://flake.parts/dogfood-a-reusable-module.html
-              customPackages = localFlake.withSystem system (
+              customPackages = withSystem system (
                 {config, ...}: config.packages
               );
             };
