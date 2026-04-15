@@ -1,38 +1,45 @@
-localFlake @ {inputs}: {
-  flake-parts-lib,
+localFlake @ {
+  import-tree,
+  projectLib,
+}: {
   lib,
+  flake-parts-lib,
   ...
 }: {
-  options.perSystem = flake-parts-lib.mkPerSystemOption (
-    {
-      config,
-      pkgs,
-      system,
-      ...
-    }: {
-      options.devshells = lib.mkOption {
-        description = ''
-          Configure devshells with flake-parts.
+  imports = [
+    (import-tree ./modules)
+  ];
 
-          Not to be confused with `devShells`, with a capital S. Yes, this
-          is unfortunate.
+  options.perSystem = flake-parts-lib.mkPerSystemOption ({
+    config,
+    pkgs,
+    system,
+    ...
+  }: {
+    options.devshells = lib.mkOption {
+      description = ''
+        Opinionated devshell definitions.
 
-          Each devshell will also configure an equivalent `devShells`.
+        Each attribute defines one devshell and also produces a matching
+        devShells entry.
+      '';
 
-          Used to define devshells. not to be confused with `devShells`
-        '';
+      type = lib.types.lazyAttrsOf (
+        lib.types.submoduleWith {
+          modules = [
+            (import-tree ./devshell-submodules)
+          ];
 
-        type = lib.types.lazyAttrsOf (
-          lib.types.submoduleWith {
-            modules = [(inputs.import-tree ./modules)]; # import all nix files in ./modules tree as flake-parts modules
-            specialArgs = {
-              inherit pkgs system inputs;
-            };
-          }
-        );
-        default = {};
-      };
-      config.devShells = lib.mapAttrs (_name: devShellConfiguration: devShellConfiguration.build.shell) config.devshells;
-    }
-  );
+          specialArgs = {
+            inherit pkgs system projectLib;
+          };
+        }
+      );
+
+      default = {};
+    };
+
+    config.devShells =
+      lib.mapAttrs (_name: shellCfg: shellCfg.build.shell) config.devshells;
+  });
 }

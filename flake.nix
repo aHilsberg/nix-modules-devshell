@@ -1,5 +1,5 @@
 {
-  description = "Collection of nix modules for ";
+  description = "Opinionated devshell flake-parts module";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -10,32 +10,30 @@
       url = "github:numtide/devshell";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
     treefmt-nix.url = "github:numtide/treefmt-nix";
+    git-hooks-nix.url = "github:cachix/git-hooks.nix";
   };
 
-  outputs = inputs:
-    inputs.flake-parts.lib.mkFlake {inherit inputs;} (
-      {
-        self,
-        config,
-        withSystem,
-        flake-parts-lib,
-        lib,
-        ...
-      }: let
+  outputs = inputs @ {
+    nixpkgs,
+    flake-parts,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} (
+      {flake-parts-lib, ...}: let
         inherit (flake-parts-lib) importApply;
-        flakeModule = importApply ./flake-module.nix {
-          inherit inputs;
+        devshellFlakeModule = importApply ./flake-module.nix {
+          inherit (inputs) import-tree;
+          inherit projectLib;
         };
+        projectLib = import ./lib.nix {inherit (nixpkgs) lib;};
       in {
+        _module.args.projectLib = projectLib;
         imports = [
-          inputs.flake-parts.flakeModules.flakeModules
           ./pkgs.nix
-          flakeModule # use own devshell modules - https://flake.parts/dogfood-a-reusable-module
+          devshellFlakeModule
         ];
-        flake.flakeModules.default = flakeModule;
-
-        _module.args.mkDevShellDefault = lib.mkOverride 60;
 
         systems = [
           "x86_64-linux"
@@ -43,14 +41,22 @@
           "aarch64-darwin"
         ];
 
-        perSystem = {
+        flake.flakeModules.default = devshellFlakeModule;
+
+        perSystem = {pkgs, ...}: {
           devshells.default = {
+            packages = [pkgs.hello];
+
             env = [
               {
-                name = "Test2";
-                value = "MODULES WORK2";
+                name = "TEST_VAR";
+                value = "MODULES WORK";
               }
             ];
+
+            formatting.enable = false; # TODO move to flake scope
+            git-hooks.enable = false; # TODO move to flake scope
+            dotnet.enable = false;
           };
         };
       }
