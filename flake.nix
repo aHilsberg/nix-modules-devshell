@@ -13,6 +13,7 @@
 
     treefmt-nix.url = "github:numtide/treefmt-nix";
     git-hooks-nix.url = "github:cachix/git-hooks.nix";
+    files.url = "github:mightyiam/files";
   };
 
   outputs = inputs @ {
@@ -51,6 +52,7 @@
 
         perSystem = {pkgs, ...}: {
           formatting.enable = true;
+          gitignore.enable = true;
 
           devshells.default = {
             packages = [pkgs.hello];
@@ -76,7 +78,7 @@
             markdown.enable = true;
             xml.enable = true;
             yaml.enable = true;
-            # nix.enable = true;
+            nix.enable = true;
           };
         };
       }

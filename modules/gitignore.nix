@@ -1,0 +1,41 @@
+{
+  flake-parts-lib,
+  lib,
+  inputs,
+  ...
+}: {
+  options.perSystem = flake-parts-lib.mkPerSystemOption ({
+    pkgs,
+    config,
+    ...
+  }: {
+    options = {
+      gitignore = {
+        enable = lib.mkEnableOption "automatic .gitignore file creation";
+
+        entries = lib.mkOption {
+          type = lib.types.listOf lib.types.str;
+          default = [];
+          description = ''
+            List of patterns to include in the generated .gitignore file.
+          '';
+        };
+      };
+    };
+
+    config = lib.mkIf config.gitignore.enable {
+      files.files = [
+        {
+          path_ = ".gitignore";
+          drv = pkgs.writeText "gitignore" (
+            lib.concatStringsSep "\n" (config.gitignore.entries
+              ++ [
+                ".direnv"
+                "result"
+              ])
+          );
+        }
+      ];
+    };
+  });
+}

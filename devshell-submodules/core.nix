@@ -11,6 +11,31 @@
       description = "Optional explicit shell name.";
     };
 
+    startup = lib.mkOption {
+      type = lib.types.attrsOf (lib.types.submodule {
+        options = {
+          text = lib.mkOption {
+            type = lib.types.str;
+            description = ''
+              Script to run.
+            '';
+          };
+
+          deps = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+            description = ''
+              A list of other steps that this one depends on.
+            '';
+          };
+        };
+      });
+      default = {};
+      description = ''
+        A list of scripts to execute on startup.
+      '';
+    };
+
     packages = lib.mkOption {
       type = lib.types.listOf lib.types.package;
       default = [];
@@ -62,7 +87,20 @@
     };
   };
 
-  devshellConfig = builtins.intersectAttrs shellOptions config;
+  # numtide/devshell expects:
+  # - `env` at the top level
+  # - `startup`, `packages`, `name` under `devshell.*
+  devshellConfig = {
+    env = config.env;
+    devshell =
+      {
+        startup = config.startup;
+        packages = config.packages;
+      }
+      // lib.optionalAttrs (config.name != null) {
+        name = config.name;
+      };
+  };
 in {
   options =
     shellOptions
