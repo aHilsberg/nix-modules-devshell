@@ -71,6 +71,12 @@
                 pkgs.dotnetCorePackages.sdk_10_0
               ];
             };
+
+            json.enable = true;
+            markdown.enable = true;
+            xml.enable = true;
+            yaml.enable = true;
+            # nix.enable = true;
           };
         };
       }

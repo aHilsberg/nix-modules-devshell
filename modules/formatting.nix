@@ -20,16 +20,42 @@
 
     visibleSettingsOptions =
       lib.removeAttrs
-      (lib.filterAttrs (_: opt: opt.visible or true)
+      (lib.filterAttrs (_: opt: (opt.visible or true) && !(opt.readOnly or false))
         (treefmtOpts.settings.type.getSubOptions []))
       ["_module" "global"];
 
     visibleProgramOptions =
-      lib.filterAttrs (_: subopts: subopts.enable.visible or true)
-      treefmtOpts.programs;
+      lib.mapAttrs (
+        _: progOpts:
+          lib.filterAttrs (_: opt: (opt.visible or true) && !(opt.readOnly or false))
+          progOpts
+      )
+      (lib.filterAttrs (_: subopts: subopts.enable.visible or true)
+        treefmtOpts.programs);
   in {
     options.formatting = {
       enable = lib.mkEnableOption "formatting with treefmt";
+
+      excludes = lib.mkOption {
+        type = lib.types.listOf lib.types.str;
+        default = [
+          # Visual Studio Code
+          ".vscode/**"
+          # JetBrains IDEs (IntelliJ IDEA, WebStorm, PyCharm, Rider, etc.)
+          ".idea/**"
+          # JetBrains Fleet
+          ".fleet/**"
+          # Visual Studio
+          ".vs/**"
+          # Eclipse
+          ".settings/**"
+          # Zed
+          ".zed/**"
+        ];
+        description = ''
+          A global list of paths to exclude from all formatters. Supports glob patterns.
+        '';
+      };
     };
 
     config = lib.mkMerge [
@@ -78,6 +104,8 @@
               pkgs = pkgs;
               flakeCheck = projectLib.mkDevShellDefault true;
               flakeFormatter = projectLib.mkDevShellDefault true;
+              settings.excludes = config.formatting.excludes;
+              programs.prettier.package = lib.mkDefault pkgs.prettier;
             }
           ]
           ++ lib.mapAttrsToList
