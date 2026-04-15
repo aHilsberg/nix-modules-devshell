@@ -15,7 +15,19 @@
     config,
     options,
     ...
-  }: {
+  }: let
+    treefmtOpts = options.treefmt.type.getSubOptions [];
+
+    visibleSettingsOptions =
+      lib.removeAttrs
+      (lib.filterAttrs (_: opt: opt.visible or true)
+        (treefmtOpts.settings.type.getSubOptions []))
+      ["_module" "global"];
+
+    visibleProgramOptions =
+      lib.filterAttrs (_: subopts: subopts.enable.visible or true)
+      treefmtOpts.programs;
+  in {
     options.formatting = {
       enable = lib.mkEnableOption "formatting with treefmt";
     };
@@ -23,62 +35,54 @@
     config = lib.mkMerge [
       {
         devshell-submodule-extension = [
-          ({
-            lib,
-            config,
-            ...
-          }: {
-            options.formatting.treefmt =
-              lib.mkOption
-              {
-                type = lib.types.submodule (
-                  let
-                    treefmtOpts = options.treefmt.type.getSubOptions [];
-                  in {
-                    options = {
-                      settings = lib.mkOption {
-                        type = treefmtOpts.settings.type;
-                        default = {};
-                        description = ''
-                          treefmt settings configuration included in this devshell.
-                        '';
-                      };
-
-                      programs = lib.mkOption {
-                        type = lib.types.submodule {
-                          options = treefmtOpts.programs;
-                        };
-                        default = {};
-                        description = ''
-                          treefmt programs configuration included in this devshell.
-                        '';
-                      };
+          ({lib, ...}: {
+            options.formatting.treefmt = lib.mkOption {
+              type = lib.types.submodule {
+                options = {
+                  settings = lib.mkOption {
+                    type = lib.types.submodule {
+                      freeformType = (pkgs.formats.toml {}).type;
+                      options = visibleSettingsOptions;
                     };
-                  }
-                );
+                    default = {};
+                    description = ''
+                      treefmt settings configuration included in this devshell.
+                    '';
+                  };
+
+                  programs = lib.mkOption {
+                    type = lib.types.submodule {
+                      options = visibleProgramOptions;
+                    };
+                    default = {};
+                    description = ''
+                      treefmt programs configuration included in this devshell.
+                    '';
+                  };
+                };
               };
+              default = {};
+              description = ''
+                treefmt configuration included in all devshells.
+                This will be merged into the perSystem treefmt if formatting is enabled.
+              '';
+            };
           })
         ];
       }
 
-      # see https://flake.parts/options/treefmt-nix.html
       (lib.mkIf config.formatting.enable {
         treefmt = lib.mkMerge (
           [
             {
               pkgs = pkgs;
-
-              # adds `treefmt` check so that formatter runs on `nix flake check` (sandboxed: no writes)
               flakeCheck = projectLib.mkDevShellDefault true;
-              # adds `treefmt` as formatter, `nix fmt` starts all formatters registered in `treefmt`
               flakeFormatter = projectLib.mkDevShellDefault true;
             }
           ]
-          ++ (
-            lib.mapAttrsToList
-            (_: shellCfg: shellCfg.formatting.treefmt or {})
-            config.devshells
-          )
+          ++ lib.mapAttrsToList
+          (_: shellCfg: shellCfg.formatting.treefmt or {})
+          config.devshells
         );
       })
 
