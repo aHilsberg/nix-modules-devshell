@@ -50,7 +50,7 @@
         flake.flakeModules.default = devshellFlakeModule;
 
         perSystem = {pkgs, ...}: {
-          formatting.enable = false;
+          formatting.enable = true;
 
           devshells.default = {
             packages = [pkgs.hello];
@@ -65,6 +65,7 @@
             # git-hooks.enable = false; # TODO move to flake scope
             dotnet = {
               enable = true;
+              testing.snapshots = true;
               sdk = pkgs.dotnetCorePackages.combinePackages [
                 pkgs.dotnetCorePackages.sdk_8_0
                 pkgs.dotnetCorePackages.sdk_10_0

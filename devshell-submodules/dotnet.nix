@@ -65,5 +65,22 @@
         eval = "$PRJ_ROOT/.dev/dotnet/nuget/plugins-cache";
       }
     ];
+
+    formatting.treefmt = {
+      settings.formatter = {
+        "jb" = {
+          command = lib.getExe customPackages.jetbrains-globaltools;
+          options = [
+            "cleanupcode"
+          ];
+          includes = [
+            "*.cs"
+            "*.csproj"
+            "Directory.Packages.props"
+          ];
+          excludes = ["legacy/**"];
+        };
+      };
+    };
   });
 }

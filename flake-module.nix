@@ -17,32 +17,43 @@ localFlake @ {
     system,
     ...
   }: {
-    options.devshells = lib.mkOption {
-      description = ''
-        Opinionated devshell definitions.
+    options = {
+      devshell-submodule-extension = lib.mkOption {
+        description = "Submodules specified by top level modules, to allow submodule to specify data used in toplevel modules";
+        type = lib.types.listOf lib.types.deferredModule;
+        default = [];
+        internal = true;
+      };
 
-        Each attribute defines one devshell and also produces a matching
-        devShells entry.
-      '';
+      devshells = lib.mkOption {
+        description = ''
+          Opinionated devshell definitions.
 
-      type = lib.types.lazyAttrsOf (
-        lib.types.submoduleWith {
-          modules = [
-            (import-tree ./devshell-submodules)
-          ];
+          Each attribute defines one devshell and also produces a matching
+          devShells entry.
+        '';
 
-          specialArgs = {
-            inherit pkgs system projectLib;
-            # Provide custom packages - accessible in submodules
-            # see https://flake.parts/dogfood-a-reusable-module.html
-            customPackages = localFlake.withSystem system (
-              {config, ...}: config.packages
-            );
-          };
-        }
-      );
+        type = lib.types.lazyAttrsOf (
+          lib.types.submoduleWith {
+            modules =
+              [
+                (import-tree ./devshell-submodules)
+              ]
+              ++ config.devshell-submodule-extension;
 
-      default = {};
+            specialArgs = {
+              inherit pkgs system projectLib;
+              # Provide custom packages - accessible in submodules
+              # see https://flake.parts/dogfood-a-reusable-module.html
+              customPackages = localFlake.withSystem system (
+                {config, ...}: config.packages
+              );
+            };
+          }
+        );
+
+        default = {};
+      };
     };
 
     config.devShells =
