@@ -51,6 +51,8 @@
           ".settings/**"
           # Zed
           ".zed/**"
+          # direnv
+          ".direnv/**"
         ];
         description = ''
           A global list of paths to exclude from all formatters. Supports glob patterns.
