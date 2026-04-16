@@ -1,4 +1,4 @@
-{
+{...}: {
   flake-parts-lib,
   lib,
   ...

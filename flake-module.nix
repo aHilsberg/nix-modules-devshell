@@ -1,5 +1,5 @@
 {
-  import-tree,
+  localInputs,
   projectLib,
   withSystem,
 }: {
@@ -8,7 +8,12 @@
   ...
 }: {
   imports = [
-    (import-tree ./modules)
+    (
+      # Wrapper that uses import-tree's .map to import each path and then apply args
+      # All modules are expected to be nested functions: { localInputs, projectLib, ... }: { ... }: { ... }
+      localInputs.import-tree.map (modulePath: (import modulePath) {inherit localInputs projectLib;})
+      ./modules
+    )
   ];
 
   options.perSystem = flake-parts-lib.mkPerSystemOption ({
@@ -37,7 +42,7 @@
           lib.types.submoduleWith {
             modules =
               [
-                (import-tree ./devshell-submodules)
+                (localInputs.import-tree ./devshell-submodules)
               ]
               ++ config.devshell-submodule-extension;
 

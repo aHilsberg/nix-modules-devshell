@@ -1,11 +1,10 @@
-{
+{localInputs, ...}: {
   flake-parts-lib,
   lib,
-  inputs,
   ...
 }: {
   imports = [
-    inputs.git-hooks-nix.flakeModule
+    localInputs.git-hooks-nix.flakeModule
   ];
 
   options.perSystem = flake-parts-lib.mkPerSystemOption ({

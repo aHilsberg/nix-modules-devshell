@@ -10,6 +10,10 @@ This guide explains the internal architecture of `nix-modules-devshell` for deve
 - [Entry Points](#entry-points)
     - [flake.nix](#flake-nix)
     - [flake-module.nix](#flake-module-nix)
+- [Module Argument Injection](#module-argument-injection)
+    - [The Problem](#the-problem)
+    - [The Solution: importTreeApply](#the-solution-importtreeapply)
+    - [Module Pattern](#module-pattern)
 - [Module System](#module-system)
     - [perSystem Modules](#persystem-modules)
     - [Devshell Submodules](#devshell-submodules)
@@ -46,11 +50,22 @@ This guide explains the internal architecture of `nix-modules-devshell` for deve
 
 ### <a id="flake-nix"></a>`flake.nix`
 
-The flake exposes the module for consumers:
+The flake exposes the module for consumers using `importApply` to inject local flake arguments:
 
 ```nix
-flake.flakeModule = config.flakeModules.default;
-flake.flakeModules.default = devshellFlakeModule;
+# flake.nix (simplified)
+outputs = inputs @ {...}:
+  flake-parts.lib.mkFlake {inherit inputs;} ({flake-parts-lib, ...}: let
+    inherit (flake-parts-lib) importApply;
+    devshellFlakeModule = importApply ./flake-module.nix {
+      localInputs = inputs;
+      inherit projectLib withSystem;
+    };
+    projectLib = import ./lib.nix {inherit (nixpkgs) lib;};
+  in {
+    flake.flakeModule = config.flake.flakeModules.default;
+    flake.flakeModules.default = devshellFlakeModule;
+  });
 ```
 
 This flake also **dogfoods** its own module by importing `devshellFlakeModule` directly, allowing us to test the module system on itself.
@@ -59,25 +74,38 @@ This flake also **dogfoods** its own module by importing `devshellFlakeModule` d
 
 The main entry point that consumers import. It:
 
-1. Imports all modules from `modules/` via `import-tree`
-2. Declares the `devshells.<name>` option as a submodule (the submodules beeing imported from `devshell-submodules` via `import-tree`)
-3. Passes `specialArgs` to submodules for cross-scope communication
-4. Maps `devshells` to `devShells` outputs
+1. Receives `localInputs` and `projectLib` via the curried function pattern
+2. Imports all modules from `modules/` via `import-tree` with argument injection
+3. Declares the `devshells.<name>` option as a submodule
+4. Passes `specialArgs` to submodules for cross-scope communication
+5. Maps `devshells` to `devShells` outputs
 
 ```nix
 # flake-module.nix (simplified)
 {
-  imports = [ (import-tree ./modules) ];
+  localInputs,
+  projectLib,
+  withSystem,
+}: {
+  lib,
+  flake-parts-lib,
+  ...
+}: {
+  imports = [
+    (localInputs.import-tree.map
+      (modulePath: (import modulePath) {inherit localInputs projectLib;})
+      ./modules)
+  ];
 
   options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
     options.devshells = lib.mkOption {
       type = lib.types.lazyAttrsOf (
         lib.types.submoduleWith {
-          modules = [ (import-tree ./devshell-submodules) ]
+          modules = [ (localInputs.import-tree ./devshell-submodules) ]
                     ++ config.devshell-submodule-extension;
           specialArgs = {
-            perSysCfg = config;      # perSystem config passed to submodules
-            customPkgs = ...;        # packages from perSystem
+            perSysCfg = config;
+            customPkgs = ...;
           };
         }
       );
@@ -85,6 +113,96 @@ The main entry point that consumers import. It:
 
     config.devShells = lib.mapAttrs (_: cfg: cfg.build.shell) config.devshells;
   });
+}
+```
+
+## <a id="module-argument-injection"></a>Module Argument Injection
+
+### <a id="the-problem"></a>The Problem
+
+Modules in `modules/` need access to flake-level values like `localInputs` (to import other flake modules) and `projectLib` (for shared utilities). However, we can't use `_module.args` for this because:
+
+1. `_module.args` requires evaluating `config`
+2. `imports` are evaluated before `config` is available
+3. This creates an infinite recursion when modules try to use `localInputs` in their `imports`
+
+```nix
+# ❌ This causes infinite recursion:
+{
+  _module.args.localInputs = inputs;  # Sets localInputs in config
+  imports = [ (import-tree ./modules) ];  # Modules need localInputs for imports
+}
+
+# Module tries to use localInputs:
+{localInputs, ...}: {
+  imports = [ localInputs.treefmt-nix.flakeModule ];  # 💥 Needs config before config exists
+}
+```
+
+### <a id="the-solution-importtreeapply"></a>The Solution: importTreeApply
+
+We use `import-tree`'s `.map` function combined with a curried function pattern to inject arguments at import time, before the module system evaluates:
+
+```nix
+# flake-module.nix
+imports = [
+  (localInputs.import-tree.map
+    (modulePath: (import modulePath) {inherit localInputs projectLib;})
+    ./modules)
+];
+```
+
+This:
+
+1. Uses `import-tree` to discover all `.nix` files in `./modules`
+2. Maps over each discovered path
+3. Imports each file and immediately calls it with `{localInputs, projectLib}`
+4. The result is a standard flake-parts module that can be evaluated normally
+
+### <a id="module-pattern"></a>Module Pattern
+
+All modules in `modules/` must use the **nested function pattern**:
+
+```nix
+# Outer function: receives injected arguments (localInputs, projectLib)
+# Use `...` to accept any arguments - only name the ones you need
+{localInputs, ...}:
+
+# Inner function: standard flake-parts module arguments
+{lib, flake-parts-lib, ...}:
+
+# Module body
+{
+  imports = [
+    localInputs.treefmt-nix.flakeModule  # ✅ Can use localInputs here
+  ];
+
+  options.perSystem = ...;
+}
+```
+
+**Examples by usage:**
+
+```nix
+# Module needs localInputs only:
+{localInputs, ...}: {lib, ...}: {
+  imports = [ localInputs.git-hooks-nix.flakeModule ];
+}
+
+# Module needs projectLib only:
+{projectLib, ...}: {lib, ...}: {
+  config = projectLib.mkDevShellDefault true;
+}
+
+# Module needs both:
+{localInputs, projectLib, ...}: {lib, ...}: {
+  imports = [ localInputs.treefmt-nix.flakeModule ];
+  config = projectLib.mkDevShellDefault true;
+}
+
+# Module needs neither (still must accept args):
+{...}: {lib, ...}: {
+  options.perSystem = ...;
 }
 ```
 
@@ -141,6 +259,8 @@ perSystem = {
 };
 ```
 
+> **Note:** Devshell submodules use standard module syntax (not nested functions) because they receive arguments via `specialArgs` instead of import-time injection.
+
 ## <a id="communication-between-scopes"></a>Communication Between Scopes
 
 The two module layers need to communicate in both directions:
@@ -155,13 +275,19 @@ A perSystem module can inject options into all devshell submodules:
 
 ```nix
 # modules/formatting.nix
-config.devshell-submodule-extension = [
-  ({lib, ...}: {
-    options.formatting.treefmt = lib.mkOption {
-      # Options that each devshell can set
-    };
-  })
-];
+{localInputs, projectLib, ...}: {lib, ...}: {
+  imports = [ localInputs.treefmt-nix.flakeModule ];
+
+  options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
+    config.devshell-submodule-extension = [
+      ({lib, ...}: {
+        options.formatting.treefmt = lib.mkOption {
+          # Options that each devshell can set
+        };
+      })
+    ];
+  });
+}
 ```
 
 Then it aggregates values from all devshells:
@@ -220,15 +346,25 @@ specialArgs = {
 
 ### <a id="adding-persystem-option"></a>Adding a perSystem Option
 
-Create a new file in `modules/`:
+Create a new file in `modules/` using the nested function pattern:
 
 ```nix
 # modules/my-feature.nix
+
+# Outer function: accept injected args (use only what you need)
+{localInputs, ...}:
+
+# Inner function: standard flake-parts module
 {
   flake-parts-lib,
   lib,
   ...
 }: {
+  # Optional: import flake modules
+  imports = [
+    # localInputs.some-flake.flakeModule
+  ];
+
   options.perSystem = flake-parts-lib.mkPerSystemOption ({
     config,
     pkgs,
@@ -248,7 +384,7 @@ Create a new file in `modules/`:
 
 ### <a id="adding-devshell-submodule"></a>Adding a Devshell Submodule
 
-Create a new file in `devshell-submodules/`:
+Create a new file in `devshell-submodules/` (standard module syntax, no nesting needed):
 
 ```nix
 # devshell-submodules/my-tool.nix
@@ -279,35 +415,39 @@ When perSystem needs data from submodules:
 
 ```nix
 # modules/my-aggregator.nix
-config = {
-  # 1. Inject options into submodules
-  devshell-submodule-extension = [
-    ({lib, ...}: {
-      options.my-aggregator.data = lib.mkOption {
-        type = lib.types.listOf lib.types.str;
-        default = [];
-      };
-    })
-  ];
+{...}: {flake-parts-lib, lib, ...}: {
+  options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
+    config = {
+      # 1. Inject options into submodules
+      devshell-submodule-extension = [
+        ({lib, ...}: {
+          options.my-aggregator.data = lib.mkOption {
+            type = lib.types.listOf lib.types.str;
+            default = [];
+          };
+        })
+      ];
 
-  # 2. Aggregate from all devshells
-  my-aggregator.allData = lib.flatten (
-    lib.mapAttrsToList
-      (_: shellCfg: shellCfg.my-aggregator.data)
-      config.devshells
-  );
-};
+      # 2. Aggregate from all devshells
+      my-aggregator.allData = lib.flatten (
+        lib.mapAttrsToList
+          (_: shellCfg: shellCfg.my-aggregator.data)
+          config.devshells
+      );
+    };
+  });
+}
 ```
 
 ## <a id="key-files-reference"></a>Key Files Reference
 
-| File                           | Purpose                                |
-| ------------------------------ | -------------------------------------- |
-| `flake.nix`                    | Flake definition, dogfooding, exports  |
-| `flake-module.nix`             | Main module entry point for consumers  |
-| `lib.nix`                      | Shared utility functions               |
-| `pkgs.nix`                     | Package overlays                       |
-| `modules/`                     | perSystem-level modules                |
-| `devshell-submodules/`         | Per-devshell submodules                |
-| `devshell-submodules/core.nix` | Base shell options, builds final shell |
-| `packages/`                    | Custom packages exposed by the flake   |
+| File                           | Purpose                                    |
+| ------------------------------ | ------------------------------------------ |
+| `flake.nix`                    | Flake definition, dogfooding, exports      |
+| `flake-module.nix`             | Main module entry point for consumers      |
+| `lib.nix`                      | Shared utility functions                   |
+| `pkgs.nix`                     | Package overlays                           |
+| `modules/`                     | perSystem-level modules (nested functions) |
+| `devshell-submodules/`         | Per-devshell submodules (standard modules) |
+| `devshell-submodules/core.nix` | Base shell options, builds final shell     |
+| `packages/`                    | Custom packages exposed by the flake       |

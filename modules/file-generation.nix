@@ -1,6 +1,6 @@
-{inputs, ...}: {
+{localInputs, ...}: {...}: {
   imports = [
-    inputs.files.flakeModules.default
+    localInputs.files.flakeModules.default
   ];
 
   perSystem = {config, ...}: {

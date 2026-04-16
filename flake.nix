@@ -30,7 +30,7 @@
       }: let
         inherit (flake-parts-lib) importApply;
         devshellFlakeModule = importApply ./flake-module.nix {
-          inherit (inputs) import-tree;
+          localInputs = inputs;
           inherit projectLib withSystem;
         };
         projectLib = import ./lib.nix {inherit (nixpkgs) lib;};

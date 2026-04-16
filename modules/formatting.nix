@@ -1,12 +1,14 @@
 {
+  localInputs,
+  projectLib,
+  ...
+}: {
   flake-parts-lib,
   lib,
-  projectLib,
-  inputs,
   ...
 }: {
   imports = [
-    inputs.treefmt-nix.flakeModule
+    localInputs.treefmt-nix.flakeModule
   ];
 
   options.perSystem = flake-parts-lib.mkPerSystemOption ({
