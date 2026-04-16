@@ -48,6 +48,8 @@
           "aarch64-darwin"
         ];
 
+        flake.overlays = {default = inputs.devshell.overlays.default;};
+
         flake.flakeModule = config.flake.flakeModules.default;
         flake.flakeModules.default = devshellFlakeModule;
 

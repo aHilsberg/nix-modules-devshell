@@ -4,11 +4,95 @@ This guide covers the installation of Nix and optional tools to use the nix-modu
 
 ## Table of Contents
 
+- [Adding to Your Project](#adding-to-your-project)
+    - [Importing the Flake Module](#importing-the-flake-module)
+    - [Consuming the Devshell Overlay](#consuming-the-devshell-overlay)
 - [Prerequisites](#prerequisites)
     - [Installing Nix](#installing-nix)
     - [Installing direnv (Optional but Recommended)](#installing-direnv)
 - [Verifying Installation](#verifying-installation)
 - [Next Steps](#next-steps)
+
+## <a id="adding-to-your-project"></a>Adding to Your Project
+
+### <a id="importing-the-flake-module"></a>Importing the Flake Module
+
+This project provides a [flake-parts](https://flake.parts) module that you must import into your flake configuration.
+
+Add the input and import the module:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    nix-modules-devshell.url = "github:your-org/nix-modules-devshell";
+  };
+
+  outputs = inputs @ {flake-parts, ...}:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      imports = [
+        inputs.nix-modules-devshell.flakeModule
+      ];
+
+      systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
+
+      perSystem = {pkgs, ...}: {
+        # Enable formatting and other features
+        formatting.enable = true;
+        gitignore.enable = true;
+        git-hooks.enable = true;
+
+        devshells.default = {
+          # Your devshell configuration here
+          nix.enable = true;
+          json.enable = true;
+        };
+      };
+    };
+}
+```
+
+### <a id="consuming-the-devshell-overlay"></a>Consuming the Devshell Overlay
+
+When using this flake module, you **must** consume the devshell overlay that is exposed by this flake. The overlay is required for the devshell functionality to work properly.
+
+**Important:** The overlay must be applied to your `pkgs` instance.
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    nix-modules-devshell.url = "github:your-org/nix-modules-devshell";
+  };
+
+  outputs = inputs @ {flake-parts, nix-modules-devshell, nixpkgs, ...}:
+    flake-parts.lib.mkFlake {inherit inputs;} ({config, ...}: {
+      imports = [
+        inputs.nix-modules-devshell.flakeModule
+      ];
+
+      systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
+
+      # Re-export the overlay so your consumers can use it
+      flake.overlays.default = nix-modules-devshell.overlays.default;
+
+      # Apply the overlay when creating your pkgs
+      perSystem = {system, ...}: {
+        _module.args.pkgs = import inputs.nixpkgs {
+        inherit system;
+        overlays = [inputs.nix-modules-devshell.overlays.default];
+        };
+
+        formatting.enable = true;
+        devshells.default = {
+          # Your configuration
+        };
+      };
+    });
+}
+```
 
 ## <a id="prerequisites"></a>Prerequisites
 
