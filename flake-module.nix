@@ -5,6 +5,7 @@
 }: {
   lib,
   flake-parts-lib,
+  self,
   ...
 }: {
   imports = [
@@ -47,7 +48,7 @@
               ++ config.devshell-submodule-extension;
 
             specialArgs = {
-              inherit pkgs system projectLib;
+              inherit pkgs system projectLib self;
               perSysCfg = config;
               # make local config and packages accessible in submodules
               # see https://flake.parts/dogfood-a-reusable-module.html
