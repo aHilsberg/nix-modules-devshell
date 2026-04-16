@@ -2,9 +2,17 @@
 
 This guide covers the installation of Nix and optional tools to use the nix-modules-devshell development environment.
 
-## Prerequisites
+## Table of Contents
 
-### Installing Nix
+- [Prerequisites](#prerequisites)
+    - [Installing Nix](#installing-nix)
+    - [Installing direnv (Optional but Recommended)](#installing-direnv)
+- [Verifying Installation](#verifying-installation)
+- [Next Steps](#next-steps)
+
+## <a id="prerequisites"></a>Prerequisites
+
+### <a id="installing-nix"></a>Installing Nix
 
 To use this development environment, you need Nix with Flakes enabled.
 
@@ -24,7 +32,7 @@ Follow the [official Nix installation guide](https://nixos.org/download.html) fo
 experimental-features = nix-command flakes
 ```
 
-### Installing direnv (Optional but Recommended)
+### <a id="installing-direnv"></a>Installing direnv (Optional but Recommended)
 
 **direnv** automatically activates the Nix development environment when you enter the project directory. Without direnv, you must manually run `nix develop` each time you open a new terminal.
 
@@ -112,7 +120,7 @@ watch_dir nix
 watch_dir modules
 ```
 
-## Verifying Installation
+## <a id="verifying-installation"></a>Verifying Installation
 
 After installation, verify everything works:
 
@@ -127,6 +135,6 @@ nix flake --help
 direnv --version
 ```
 
-## Next Steps
+## <a id="next-steps"></a>Next Steps
 
 See the [Getting Started](./getting-started.md) guide to learn how to use the development environment.

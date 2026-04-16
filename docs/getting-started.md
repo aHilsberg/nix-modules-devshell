@@ -2,9 +2,34 @@
 
 This guide explains how to use the nix-modules-devshell development environment in your projects.
 
-## Entering the Development Shell
+## Table of Contents
 
-### With direnv (Recommended)
+- [Entering the Development Shell](#entering-the-development-shell)
+    - [With direnv (Recommended)](#with-direnv)
+    - [Without direnv](#without-direnv)
+- [Formatting Code](#formatting-code)
+    - [Format All Files](#format-all-files)
+    - [Format Specific Files](#format-specific-files)
+    - [Check Formatting Without Modifying (CI)](#check-formatting-ci)
+    - [Passing Options to the Formatter](#passing-options-to-formatter)
+- [Nix-Managed Files](#nix-managed-files)
+    - [How It Works](#nix-managed-how-it-works)
+    - [Regenerating Managed Files](#regenerating-managed-files)
+    - [CI Check](#nix-managed-ci-check)
+- [Available Modules](#available-modules)
+    - [Enabling Modules](#enabling-modules)
+- [Git Hooks](#git-hooks)
+    - [Enabling Git Hooks](#enabling-git-hooks)
+    - [Available Hooks](#available-hooks)
+    - [Running Hooks Manually](#running-hooks-manually)
+    - [Configuring Manual Run Stages](#configuring-manual-run-stages)
+    - [Skip Hooks (Emergency Only)](#skip-hooks)
+- [Useful Commands](#useful-commands)
+- [References](#references)
+
+## <a id="entering-the-development-shell"></a>Entering the Development Shell
+
+### <a id="with-direnv"></a>With direnv (Recommended)
 
 If you have direnv installed and configured:
 
@@ -14,7 +39,7 @@ direnv allow  # Only required the first time
 # The environment activates automatically
 ```
 
-### Without direnv
+### <a id="without-direnv"></a>Without direnv
 
 ```bash
 cd <project-directory>
@@ -23,23 +48,23 @@ nix develop
 
 This provides all tools, SDKs, and configures environment variables automatically.
 
-## Formatting Code
+## <a id="formatting-code"></a>Formatting Code
 
 The development environment uses **treefmt** (via `nix fmt`) as a unified wrapper for all formatters. This ensures consistent formatting across different file types and languages.
 
-### Format All Files
+### <a id="format-all-files"></a>Format All Files
 
 ```bash
 nix fmt
 ```
 
-### Format Specific Files
+### <a id="format-specific-files"></a>Format Specific Files
 
 ```bash
 nix fmt -- path/to/file.nix path/to/other.md
 ```
 
-### Check Formatting Without Modifying (CI)
+### <a id="check-formatting-ci"></a>Check Formatting Without Modifying (CI)
 
 ```bash
 nix fmt -- --fail-on-change
@@ -47,7 +72,7 @@ nix fmt -- --fail-on-change
 nix flake check
 ```
 
-### Passing Options to the Formatter
+### <a id="passing-options-to-formatter"></a>Passing Options to the Formatter
 
 Arguments after `--` are forwarded to the underlying formatter:
 
@@ -58,11 +83,11 @@ nix fmt -- --quiet
 
 **Note:** The forwarded arguments must be supported by the formatter configured in your flake.
 
-## Nix-Managed Files
+## <a id="nix-managed-files"></a>Nix-Managed Files
 
 Some files in your project may be generated and managed by Nix. These files are **read-only** and should not be edited manually.
 
-### How It Works
+### <a id="nix-managed-how-it-works"></a>How It Works
 
 The `files` module (via `mightyiam/files`) allows declaring files that should be generated from Nix expressions. This is useful for:
 
@@ -70,15 +95,15 @@ The `files` module (via `mightyiam/files`) allows declaring files that should be
 - Configuration files that should stay in sync with Nix definitions
 - Any file that should be derived from your flake configuration
 
-### Regenerating Managed Files
+### <a id="regenerating-managed-files"></a>Regenerating Managed Files
 
-To regenerate all Nix-managed files:
+To regenerate all Nix-managed files (this command also runs on devshell setup):
 
 ```bash
 nix run .#generate-nix-managed-files
 ```
 
-### CI Check
+### <a id="nix-managed-ci-check"></a>CI Check
 
 A check is included that fails if Nix-managed files have been manually modified:
 
@@ -90,7 +115,7 @@ If you see an error about managed files being modified, regenerate them with the
 
 **Important:** Nix-managed files are read-only. Any manual changes will be overwritten when regenerating and will cause CI to fail.
 
-## Available Modules
+## <a id="available-modules"></a>Available Modules
 
 The devshell supports various language and tool modules that can be enabled:
 
@@ -104,26 +129,28 @@ The devshell supports various language and tool modules that can be enabled:
 | `docker`   | Dockerfile formatting with dockerfmt      |
 | `nix`      | Nix formatting with alejandra and deadnix |
 
-### Enabling Modules
+### <a id="enabling-modules"></a>Enabling Modules
 
 In your devshell configuration:
 
 ```nix
-devshells.default = {
-  dotnet.enable = true;
-  json.enable = true;
-  markdown.enable = true;
-  yaml.enable = true;
-  xml.enable = true;
-  # ...
+perSystem = {
+    devshells.default = {
+        dotnet.enable = true;
+        json.enable = true;
+        markdown.enable = true;
+        yaml.enable = true;
+        xml.enable = true;
+        # ...
+    };
 };
 ```
 
-## Git Hooks
+## <a id="git-hooks"></a>Git Hooks
 
-Git hooks are automatically configured when both `git-hooks.enable` and `formatting.enable` are set to `true`. The pre-commit hook runs formatters on staged files before each commit.
+Git hooks are automatically installed when entering the development shell (if `git-hooks.enable = true`). This module uses [cachix/git-hooks.nix](https://github.com/cachix/git-hooks.nix) under the hood.
 
-### Enabling Git Hooks
+### <a id="enabling-git-hooks"></a>Enabling Git Hooks
 
 In your perSystem configuration:
 
@@ -138,32 +165,48 @@ perSystem = {pkgs, ...}: {
 };
 ```
 
-### How It Works
+### <a id="available-hooks"></a>Available Hooks
 
-1. When entering the development shell, Git hooks are automatically installed
-2. Before each `git commit`, the treefmt hook runs on staged files
-3. Changed files are automatically formatted
-4. If formatting changes were made, you must re-stage and commit again
+| Hook          | Stage    | Entry / Description    |
+| ------------- | -------- | ---------------------- |
+| `flake-check` | pre-push | Runs `nix flake check` |
 
-### Configured Hooks
+**Note:** Formatting is not checked via git hooks but via `nix flake check` (which runs the treefmt check). This avoids circular dependencies since hooks can run `nix flake check`.
 
-The following pre-commit hooks are configured:
+### <a id="running-hooks-manually"></a>Running Hooks Manually
 
-| Hook      | Description                      |
-| --------- | -------------------------------- |
-| `treefmt` | Runs treefmt on all staged files |
-
-### Running Hooks Manually
+The `run-git-hooks` command is available in the devshell to run all configured hooks manually:
 
 ```bash
-# Format all files (same as what hooks do)
+run-git-hooks
+```
+
+By default, this runs hooks for the following stages: `manual`, `pre-commit`, and `pre-push`.
+
+You can also run formatters directly:
+
+```bash
+# Format all files (same as what treefmt hook does)
 nix fmt
 
 # Check without modifying (as in CI)
 nix fmt -- --fail-on-change
 ```
 
-### Skip Hooks (Emergency Only)
+### <a id="configuring-manual-run-stages"></a>Configuring Manual Run Stages
+
+You can configure which stages `run-git-hooks` executes via `git-hooks.runStages`:
+
+```nix
+perSystem = {
+  git-hooks = {
+    enable = true;
+    runStages = ["pre-commit" "pre-push"];  # default: ["manual" "pre-commit" "pre-push"]
+  };
+};
+```
+
+### <a id="skip-hooks"></a>Skip Hooks (Emergency Only)
 
 In rare cases, you can skip hooks:
 
@@ -173,7 +216,7 @@ git commit --no-verify -m "Commit message"
 
 **Note:** Use sparingly. CI will still check formatting.
 
-## Useful Commands
+## <a id="useful-commands"></a>Useful Commands
 
 | Command                                | Description                        |
 | -------------------------------------- | ---------------------------------- |
@@ -185,31 +228,11 @@ git commit --no-verify -m "Commit message"
 | `direnv allow`                         | Allow direnv for current directory |
 | `direnv reload`                        | Reload the development environment |
 
-## Troubleshooting
-
-### Environment Not Activating with direnv
-
-1. Ensure direnv is installed: `direnv --version`
-2. Ensure the shell hook is configured (see [Installation](./installation.md))
-3. Run `direnv allow` in the project directory
-4. Check for errors with `direnv status`
-
-### Formatting Fails
-
-1. Ensure you're in the development shell
-2. Check which files are failing: `nix fmt -- --fail-on-change`
-3. Run `nix fmt` to fix formatting issues
-
-### Nix-Managed File Check Fails
-
-1. Don't manually edit Nix-managed files
-2. Regenerate with: `nix run .#generate-nix-managed-files`
-3. Commit the regenerated files
-
-## References
+## <a id="references"></a>References
 
 - [Nix Flakes](https://nixos.wiki/wiki/Flakes)
 - [numtide/devshell](https://github.com/numtide/devshell)
 - [treefmt-nix](https://github.com/numtide/treefmt-nix)
+- [cachix/git-hooks.nix](https://github.com/cachix/git-hooks.nix)
 - [direnv Documentation](https://direnv.net/)
 - [mightyiam/files](https://github.com/mightyiam/files)

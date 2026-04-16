@@ -6,6 +6,7 @@ Opinionated, modular development shell configuration built on:
 - [flake-parts](https://github.com/hercules-ci/flake-parts)
 - [treefmt-nix](https://github.com/numtide/treefmt-nix)
 - [mightyiam/files](https://github.com/mightyiam/files)
+- [cachix/git-hooks.nix](https://github.com/cachix/git-hooks.nix)
 
 ## Features
 
@@ -37,7 +38,13 @@ Opinionated, modular development shell configuration built on:
         formatting.enable = true;
 
         devshells.default = {
-          packages = [pkgs.git];
+          packages = [pkgs.hello];
+          env = [
+            {
+              name = "TESTING";
+              value = "WORKS";
+            }
+          ];
 
           dotnet.enable = true;
           json.enable = true;
@@ -67,6 +74,7 @@ Opinionated, modular development shell configuration built on:
 
 - [Installation](./docs/installation.md) - Installing Nix and direnv
 - [Getting Started](./docs/getting-started.md) - Using the development environment
+- [Developer Guide](./docs/developer-guide.md) - Internal architecture and module system (for contributors)
 
 ## Usage
 

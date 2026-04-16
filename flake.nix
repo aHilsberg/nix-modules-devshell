@@ -25,6 +25,7 @@
       {
         flake-parts-lib,
         withSystem,
+        config,
         ...
       }: let
         inherit (flake-parts-lib) importApply;
@@ -47,35 +48,35 @@
           "aarch64-darwin"
         ];
 
+        flake.flakeModule = config.flake.flakeModules.default;
         flake.flakeModules.default = devshellFlakeModule;
 
-        perSystem = {pkgs, ...}: {
+        perSystem = {...}: {
           gitignore.enable = true;
           formatting.enable = true;
           git-hooks.enable = true;
 
           devshells.default = {
-            packages = [pkgs.hello];
+            # packages = [pkgs.hello];
+            # env = [
+            #   {
+            #     name = "TESTING";
+            #     value = "WORKS";
+            #   }
+            # ];
 
-            env = [
-              {
-                name = "TEST_VAR";
-                value = "WORKS";
-              }
-            ];
-
-            dotnet = {
-              enable = true;
-              testing.snapshots = true;
-              # sdk = pkgs.dotnetCorePackages.combinePackages [
-              #   pkgs.dotnetCorePackages.sdk_8_0
-              #   pkgs.dotnetCorePackages.sdk_10_0
-              # ];
-            };
+            # dotnet = {
+            #   enable = true;
+            #   testing.snapshots = true;
+            # sdk = pkgs.dotnetCorePackages.combinePackages [
+            #   pkgs.dotnetCorePackages.sdk_8_0
+            #   pkgs.dotnetCorePackages.sdk_10_0
+            # ];
+            # };
             json.enable = true;
             markdown.enable = true;
-            xml.enable = true;
-            yaml.enable = true;
+            # xml.enable = true;
+            # yaml.enable = true;
             nix.enable = true;
           };
         };
