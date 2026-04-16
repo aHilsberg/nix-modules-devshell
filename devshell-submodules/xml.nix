@@ -1,7 +1,7 @@
 {
   lib,
   config,
-  customPackages,
+  customPkgs,
   ...
 }: {
   options.xml = {
@@ -21,7 +21,7 @@
 
         settings = {
           editorconfig = true;
-          plugins = ["${customPackages.prettier-plugin-xml}/lib/node_modules/@prettier/plugin-xml/src/plugin.js"];
+          plugins = ["${customPkgs.prettier-plugin-xml}/lib/node_modules/@prettier/plugin-xml/src/plugin.js"];
           overrides = [
             {
               files = xmlFilePatterns;

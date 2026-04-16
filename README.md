@@ -9,10 +9,10 @@ Opinionated, modular development shell configuration built on:
 
 ## Features
 
-- **Modular design**: Enable only what you need (dotnet, formatters, git-hooks, etc.)
 - **Reproducible environments**: Same tools and versions for every developer
+- **Modular design**: Enable only what you need (language sdks/tooling, formatters, git-hooks, etc.)
 - **Unified formatting**: Single `nix fmt` command for all file types via treefmt
-- **Nix-managed files**: Declare configuration files in Nix, generate them automatically
+- **Nix-managed files**: Declare configuration files in Nix (such as `.gitignore`), generate them automatically
 - **direnv integration**: Automatic environment activation when entering project directory
 
 ## Quick Start

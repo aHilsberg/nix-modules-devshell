@@ -1,8 +1,8 @@
 {
+  customPkgs,
   lib,
   config,
   pkgs,
-  customPackages,
   ...
 }: {
   options.dotnet = {
@@ -30,11 +30,11 @@
     packages =
       [
         config.dotnet.sdk
-        customPackages.reportgenerator
-        customPackages.jetbrains-globaltools
+        customPkgs.reportgenerator
+        customPkgs.jetbrains-globaltools
       ]
       ++ lib.optionals config.dotnet.testing.snapshots [
-        customPackages.verify-terminal
+        customPkgs.verify-terminal
       ];
 
     env = [
@@ -66,7 +66,7 @@
     formatting.treefmt = {
       settings.formatter = {
         "jb" = {
-          command = lib.getExe customPackages.jetbrains-globaltools;
+          command = lib.getExe customPkgs.jetbrains-globaltools;
           options = [
             "cleanupcode"
           ];
