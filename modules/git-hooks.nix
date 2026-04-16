@@ -47,21 +47,24 @@
         ]))
       ];
 
-      packages.run-git-hooks =
-        lib.mkIf config.git-hooks.enable
-        (let
-          preCommitConfig = config.pre-commit.settings;
-          inherit (preCommitConfig) package configFile;
-          stageCommands =
-            lib.concatMapStringsSep "\n" (stage: ''
-              ${pkgs.lib.getExe package} run --all-files --config ${configFile} --hook-stage ${stage} || exit 1
-            '')
-            config.git-hooks.runStages;
-          script = ''
-            ${stageCommands}
-          '';
-        in
-          pkgs.writeShellScriptBin "run-git-hooks" script);
+      packages.run-git-hooks = lib.mkDefault (
+        if config.git-hooks.enable
+        then
+          (let
+            preCommitConfig = config.pre-commit.settings;
+            inherit (preCommitConfig) package configFile;
+            stageCommands =
+              lib.concatMapStringsSep "\n" (stage: ''
+                ${pkgs.lib.getExe package} run --all-files --config ${configFile} --hook-stage ${stage} || exit 1
+              '')
+              config.git-hooks.runStages;
+            script = ''
+              ${stageCommands}
+            '';
+          in
+            pkgs.writeShellScriptBin "run-git-hooks" script)
+        else pkgs.emptyDirectory
+      );
 
       gitignore.entries =
         lib.mkIf config.git-hooks.enable
