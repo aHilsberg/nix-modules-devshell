@@ -1,3 +1,3 @@
 {lib, ...}: rec {
-  mkDevShellDefault = lib.mkOverride 60;
+    mkDevShellDefault = lib.mkOverride 60;
 }
