@@ -1,6 +1,7 @@
 {
   lib,
   config,
+  customPkgs,
   ...
 }: {
   options.nix = {
@@ -8,6 +9,10 @@
   };
 
   config = lib.mkIf config.nix.enable {
+    packages = [
+      customPkgs.nix-nvim
+    ];
+
     formatting.treefmt = {
       programs = {
         # removes unused / unreachable code
