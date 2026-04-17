@@ -1,11 +1,11 @@
 {
-    customPkgs,
+    perSysCfg,
     lib,
     ...
 }: {
     startup = {
         file-generation = {
-            text = lib.getExe customPkgs.generate-nix-managed-files;
+            text = lib.getExe perSysCfg.packages.generate-nix-managed-files;
         };
     };
 }
