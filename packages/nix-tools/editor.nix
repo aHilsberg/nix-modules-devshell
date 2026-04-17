@@ -132,7 +132,7 @@
         };
     in {
         packages.nix-nvim = pkgs.symlinkJoin {
-            name = "nix-neovim";
+            name = "nix-nvim";
             paths = [nvim];
             buildInputs = [pkgs.makeWrapper];
             postBuild = ''
@@ -143,13 +143,15 @@
                     pkgs.statix
                     pkgs.nixd
                 ]}
+
+                ln -s $out/bin/nvim $out/bin/nix-nvim
             '';
 
             meta = with lib; {
                 description = "Neovim configured for Nix development with LSP, formatting, and linting tools";
                 platforms = platforms.all;
                 maintainers = [];
-                mainProgram = "nvim";
+                mainProgram = "nix-nvim";
             };
         };
     };
