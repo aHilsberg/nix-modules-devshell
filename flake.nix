@@ -58,6 +58,12 @@
                     formatting.enable = true;
                     git-hooks.enable = true;
 
+                    startup = {
+                        test.text = ''
+                            echo "Hi from devshell"
+                        '';
+                    };
+
                     devshells.default = {
                         # packages = [pkgs.hello];
                         # env = [
