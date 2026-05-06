@@ -2,8 +2,20 @@
     perSystem = {pkgs, ...}: let
         nvim = pkgs.neovim.override {
             extraMakeWrapperArgs = let
-                clipPath = pkgs.lib.makeBinPath [pkgs.wl-clipboard pkgs.xclip pkgs.xsel];
-            in "--suffix PATH : ${clipPath}";
+                linuxClipboardPkgs = pkgs.lib.optionals pkgs.stdenv.isLinux [
+                    pkgs.wl-clipboard
+                    pkgs.xclip
+                    pkgs.xsel
+                ];
+
+                darwinClipboardPkgs = pkgs.lib.optionals pkgs.stdenv.isDarwin [
+                    # Usually not needed: macOS has pbcopy/pbpaste in /usr/bin.
+                    # Add extra packages here only if you really need them.
+                ];
+
+                clipPath = pkgs.lib.makeBinPath (linuxClipboardPkgs ++ darwinClipboardPkgs);
+            in
+                pkgs.lib.optionalString (clipPath != "") "--suffix PATH : ${clipPath}";
 
             configure = {
                 packages.myPlugins = with pkgs.vimPlugins; {
