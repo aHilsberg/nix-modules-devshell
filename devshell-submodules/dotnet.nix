@@ -30,7 +30,7 @@
         packages =
             [
                 config.dotnet.sdk
-                customPkgs.reportgenerator
+                customPkgs.report-generator
                 customPkgs.jetbrains-globaltools
             ]
             ++ lib.optionals config.dotnet.testing.snapshots [

@@ -1,7 +1,7 @@
 {lib, ...}: {
     perSystem = {pkgs, ...}: {
-        packages.reportgenerator = pkgs.buildDotnetModule rec {
-            pname = "dotnet-reportgenerator-globaltool";
+        packages.report-generator = pkgs.buildDotnetModule rec {
+            pname = "dotnet-report-generator";
             version = "5.5.4";
 
             src = pkgs.fetchFromGitHub {
@@ -33,7 +33,7 @@
 
             postFixup = ''
                 # Rename (instead of linking) to lowercase to avoid case-sensitivity issues on macOS
-                mv $out/bin/ReportGenerator $out/bin/reportgenerator
+                mv $out/bin/ReportGenerator $out/bin/report-generator
             '';
 
             meta = with lib; {
