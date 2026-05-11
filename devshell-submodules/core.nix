@@ -1,5 +1,6 @@
 {
     lib,
+    projectLib,
     pkgs,
     config,
     ...
@@ -11,6 +12,7 @@
             description = "Optional explicit shell name.";
         };
 
+        # https://github.com/numtide/devshell/blob/main/modules/devshell.nix
         startup = lib.mkOption {
             type = lib.types.attrsOf (lib.types.submodule {
                 options = {
@@ -42,6 +44,7 @@
             description = "Packages available in this shell.";
         };
 
+        # https://github.com/numtide/devshell/blob/main/modules/env.nix
         env = lib.mkOption {
             type = lib.types.listOf (lib.types.submodule {
                 options = {
@@ -85,13 +88,73 @@
             default = [];
             description = "Environment variables exported in the shell.";
         };
+
+        # https://github.com/numtide/devshell/blob/main/modules/commands.nix
+        commands = lib.mkOption {
+            type = lib.types.listOf (lib.types.submodule {
+                options = {
+                    name = lib.mkOption {
+                        type = lib.types.nullOr lib.types.str;
+                        default = null;
+                        description = ''
+                            Name of this command. Defaults to attribute name in commands.
+                        '';
+                    };
+
+                    category = lib.mkOption {
+                        type = lib.types.str;
+                        default = "[general commands]";
+                        description = ''
+                            Set a free text category under which this command is grouped
+                            and shown in the help menu.
+                        '';
+                    };
+
+                    help = lib.mkOption {
+                        type = lib.types.nullOr lib.types.str;
+                        default = null;
+                        description = ''
+                            Describes what the command does in one line of text.
+                        '';
+                    };
+
+                    command = lib.mkOption {
+                        type = lib.types.nullOr lib.types.str;
+                        default = null;
+                        description = ''
+                            If defined, it will add a script with the name of the command, and the
+                            content of this value.
+
+                            By default it generates a bash script, unless a different shebang is
+                            provided.
+                        '';
+                        example = ''
+                            #!/usr/bin/env python
+                            print("Hello")
+                        '';
+                    };
+
+                    package = lib.mkOption {
+                        type = lib.types.nullOr projectLib.types.strOrPackage;
+                        default = null;
+                        description = ''
+                            Used to bring in a specific package. This package will be added to the
+                            environment.
+                        '';
+                    };
+                };
+            });
+            default = [];
+            description = "Commands shown in menu of devshell.";
+        };
     };
 
     # numtide/devshell expects:
-    # - `env` at the top level
+    # - `env`, `commands` at the top level
     # - `startup`, `packages`, `name` under `devshell.*
     devshellConfig = {
         env = config.env;
+        commands = config.commands;
         devshell =
             {
                 startup = config.startup;
