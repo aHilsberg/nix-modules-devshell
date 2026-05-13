@@ -31,6 +31,7 @@
             [
                 config.dotnet.sdk
                 customPkgs.report-generator
+                customPkgs.dotnet-outdated
                 customPkgs.jetbrains-globaltools
             ]
             ++ lib.optionals config.dotnet.testing.snapshots [
@@ -60,6 +61,11 @@
             {
                 name = "NUGET_PLUGINS_CACHE_PATH";
                 eval = "$PRJ_ROOT/.dev/dotnet/nuget/plugins-cache";
+            }
+
+            {
+                name = "DOTNET_SKIP_FIRST_TIME_EXPERIENCE";
+                value = "1";
             }
         ];
 

@@ -12,7 +12,7 @@
             };
 
             projectFile = "src/Verify.Terminal/Verify.Terminal.csproj";
-            # generate this with: build .#dotnet-verify.fetch-deps && ./result
+            # generate this with: build .#dotnet-verify.fetch-deps && ./result packages/dotnet-tools/verify.deps.json
             nugetDeps = ./verify.deps.json;
 
             dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;

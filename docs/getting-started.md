@@ -146,6 +146,31 @@ perSystem = {
 };
 ```
 
+#### <a id="dotnet-packages"></a>.NET Packages
+
+When `dotnet.enable = true`, the following packages are automatically available:
+
+| Package                   | Command           | Description                                |
+| ------------------------- | ----------------- | ------------------------------------------ |
+| **dotnet-outdated**       | `dotnet-outdated` | Display and update outdated NuGet packages |
+| **report-generator**      | `reportgenerator` | Generate coverage reports from XML files   |
+| **jetbrains-globaltools** | `jb`              | JetBrains code cleanup and formatting      |
+
+Additionally, enable snapshot testing tools:
+
+```nix
+perSystem = {
+    devshells.default = {
+        dotnet.enable = true;
+        dotnet.testing.snapshots = true;  # Adds Verify.Terminal
+    };
+};
+```
+
+| Package             | Command         | Description                       |
+| ------------------- | --------------- | --------------------------------- |
+| **verify-terminal** | `dotnet-verify` | CLI for managing Verify snapshots |
+
 ## <a id="git-hooks"></a>Git Hooks
 
 Git hooks are automatically installed when entering the development shell (if `git-hooks.enable = true`). This module uses [cachix/git-hooks.nix](https://github.com/cachix/git-hooks.nix) under the hood.
