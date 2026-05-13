@@ -20,7 +20,6 @@
                 includes = xmlFilePatterns;
 
                 settings = {
-                    editorconfig = true;
                     plugins = ["${customPkgs.prettier-plugin-xml}/lib/node_modules/@prettier/plugin-xml/src/plugin.js"];
                     overrides = [
                         {

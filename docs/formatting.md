@@ -148,10 +148,6 @@ formatting.treefmt = {
             "*.md"
             "*.markdown"
         ];
-
-        settings = {
-            editorconfig = true;
-        };
     };
 };
 ```

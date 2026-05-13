@@ -15,10 +15,6 @@
                     "*.yaml"
                     "*.yml"
                 ];
-
-                settings = {
-                    editorconfig = true;
-                };
             };
         };
     };

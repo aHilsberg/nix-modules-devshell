@@ -15,10 +15,6 @@
                     "*.json"
                     "*.jsonc"
                 ];
-
-                settings = {
-                    editorconfig = true;
-                };
             };
         };
     };

@@ -15,10 +15,6 @@
                     "*.md"
                     "*.markdown"
                 ];
-
-                settings = {
-                    editorconfig = true;
-                };
             };
         };
     };
