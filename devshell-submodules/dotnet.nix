@@ -38,6 +38,30 @@
                 customPkgs.verify-terminal
             ];
 
+        commands =
+            [
+                {
+                    name = "dotnet outdated";
+                    package = customPkgs.dotnet-outdated;
+                    category = "development";
+                    help = "Check nuget package for upgradable versions and run package upgrades via cli.";
+                }
+                {
+                    name = "report-generator";
+                    package = customPkgs.report-generator;
+                    category = "development";
+                    help = "Convert Test Output to HTML or other Test/Coverage Output Formats";
+                }
+            ]
+            ++ lib.optionals config.dotnet.testing.snapshots [
+                {
+                    name = "dotnet verify";
+                    package = customPkgs.verify-terminal;
+                    category = "development";
+                    help = "Cli for reviewing/accepting/rejecting snapshot test output";
+                }
+            ];
+
         env = [
             # root folder of a .NET installation that tooling or app launch can use
             {
