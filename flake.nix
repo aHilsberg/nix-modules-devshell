@@ -84,7 +84,7 @@
                         json.enable = true;
                         markdown.enable = true;
                         # xml.enable = true;
-                        # yaml.enable = true;
+                        yaml.enable = true;
                         nix.enable = true;
                     };
                 };
