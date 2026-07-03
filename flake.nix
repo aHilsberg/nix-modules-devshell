@@ -28,12 +28,12 @@
                 config,
                 ...
             }: let
+                projectLib = import ./lib.nix {inherit (nixpkgs) lib;};
                 inherit (flake-parts-lib) importApply;
                 devshellFlakeModule = importApply ./flake-module.nix {
                     localInputs = inputs;
                     inherit projectLib withSystem;
                 };
-                projectLib = import ./lib.nix {inherit (nixpkgs) lib;};
             in {
                 _module.args.projectLib = projectLib;
                 imports = [

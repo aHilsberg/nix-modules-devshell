@@ -61,7 +61,13 @@
         exec ${lib.getExe pkgs.alejandra} --experimental-config ${alejandraConfig} "$@"
     '';
 in {
-    options.nix.enable = lib.mkEnableOption "Nix formatting for this shell";
+    options.nix = {
+        enable = lib.mkEnableOption "Nix formatting for this shell";
+        formatter = lib.mkOption {
+            type = lib.types.enum ["alejandra" "nixfmt"];
+            default = "alejandra";
+        };
+    };
 
     config = lib.mkIf config.nix.enable {
         packages = [customPkgs.nix-nvim];
@@ -73,9 +79,15 @@ in {
             };
 
             alejandra = {
-                enable = true;
+                enable = config.nix.formatter == "alejandra";
                 priority = 2;
                 package = alejandraWrapper;
+            };
+
+            nixfmt = {
+                enable = config.nix.formatter == "nixfmt";
+                priority = 2;
+                indent = indentSize;
             };
         };
     };
