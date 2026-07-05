@@ -72,22 +72,31 @@ in {
     config = lib.mkIf config.nix.enable {
         packages = [customPkgs.nix-nvim];
 
-        formatting.treefmt.programs = {
-            deadnix = {
-                enable = true;
-                priority = 1;
+        formatting.treefmt = {
+            settings.formatter = {
+                "deadnix" = {
+                    command = lib.getExe pkgs.deadnix;
+                    options = [
+                        "--fail"
+                    ];
+                    includes = [
+                        "*.nix"
+                    ];
+                    priority = 2;
+                };
             };
+            programs = {
+                alejandra = {
+                    enable = config.nix.formatter == "alejandra";
+                    priority = 1;
+                    package = alejandraWrapper;
+                };
 
-            alejandra = {
-                enable = config.nix.formatter == "alejandra";
-                priority = 2;
-                package = alejandraWrapper;
-            };
-
-            nixfmt = {
-                enable = config.nix.formatter == "nixfmt";
-                priority = 2;
-                indent = builtins.fromJSON indentSize;
+                nixfmt = {
+                    enable = config.nix.formatter == "nixfmt";
+                    priority = 1;
+                    indent = builtins.fromJSON indentSize;
+                };
             };
         };
     };
