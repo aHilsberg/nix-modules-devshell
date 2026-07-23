@@ -37,7 +37,16 @@
 
             excludes = lib.mkOption {
                 type = lib.types.listOf lib.types.str;
-                default = [
+                default = [];
+                description = ''
+                    A global list of paths to exclude from all formatters. Supports glob patterns.
+                '';
+            };
+        };
+
+        config = lib.mkMerge [
+            {
+                formatting.excludes = [
                     # Visual Studio Code
                     ".vscode/**"
                     # JetBrains IDEs (IntelliJ IDEA, WebStorm, PyCharm, Rider, etc.)
@@ -53,13 +62,8 @@
                     # direnv
                     ".direnv/**"
                 ];
-                description = ''
-                    A global list of paths to exclude from all formatters. Supports glob patterns.
-                '';
-            };
-        };
+            }
 
-        config = lib.mkMerge [
             {
                 devshell-submodule-extension = [
                     ({lib, ...}: {
