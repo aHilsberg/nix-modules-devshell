@@ -12,7 +12,7 @@
     editorconfigEvaluated =
         if hasEditorconfig
         then
-            pkgs.runCommand "editorconfig-flake-nix" {
+            pkgs.runCommandLocal "editorconfig-flake-nix" {
                 nativeBuildInputs = [pkgs.editorconfig-core-c];
             } ''
                 ${lib.getExe' pkgs.editorconfig-core-c "editorconfig"} ${self + "/flake.nix"} > "$out"
