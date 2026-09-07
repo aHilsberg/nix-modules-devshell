@@ -32,7 +32,7 @@
                 config.dotnet.sdk
                 customPkgs.report-generator
                 customPkgs.dotnet-outdated
-                customPkgs.jetbrains-globaltools
+                customPkgs.jetbrains-resharper-cleanup
             ]
             ++ lib.optionals config.dotnet.testing.snapshots [
                 customPkgs.verify-terminal
@@ -96,10 +96,7 @@
         formatting.treefmt = {
             settings.formatter = {
                 "jb" = {
-                    command = lib.getExe customPkgs.jetbrains-globaltools;
-                    options = [
-                        "cleanupcode"
-                    ];
+                    command = "${customPkgs.jetbrains-resharper-cleanup}/bin/jetbrains-resharper-cleanup";
                     includes = [
                         "*.cs"
                         "*.csproj"
