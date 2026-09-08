@@ -15,6 +15,13 @@
             # generate this with: nix build .#reportgenerator.fetch-deps && ./result
             nugetDeps = ./reportgenerator.deps.json;
 
+            postPatch = ''
+                substituteInPlace \
+                    ${projectFile} \
+                    src/ReportGenerator.DotnetCorePluginLoader/ReportGenerator.DotnetCorePluginLoader.csproj \
+                    --replace-fail '<TargetFrameworks>net8.0;net9.0;net10.0</TargetFrameworks>' '<TargetFramework>net10.0</TargetFramework>'
+            '';
+
             dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;
             dotnet-runtime = pkgs.dotnetCorePackages.runtime_10_0;
 
@@ -22,6 +29,8 @@
 
             dotnetBuildFlags = [
                 "-p:Version=${version}"
+                "-f"
+                "net10.0"
             ];
 
             dotnetInstallFlags = [

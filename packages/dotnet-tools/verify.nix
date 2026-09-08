@@ -15,6 +15,11 @@
             # generate this with: build .#dotnet-verify.fetch-deps && ./result packages/dotnet-tools/verify.deps.json
             nugetDeps = ./verify.deps.json;
 
+            postPatch = ''
+                substituteInPlace ${projectFile} \
+                    --replace-fail '<TargetFrameworks>net10.0;net8.0</TargetFrameworks>' '<TargetFramework>net10.0</TargetFramework>'
+            '';
+
             dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;
             dotnet-runtime = pkgs.dotnetCorePackages.runtime_10_0;
 
@@ -23,6 +28,8 @@
             dotnetBuildFlags = [
                 "-p:MinVerSkip=true"
                 "-p:Version=${version}"
+                "-f"
+                "net10.0"
             ];
 
             dotnetInstallFlags = [

@@ -16,7 +16,9 @@
             nugetDeps = ./dotnet-outdated.deps.json;
 
             dotnet-sdk = pkgs.dotnetCorePackages.sdk_9_0;
-            dotnet-runtime = pkgs.dotnetCorePackages.sdk_10_0;
+            dotnet-runtime = pkgs.dotnetCorePackages.runtime_9_0;
+
+            dotnetRestoreFlags = ["-p:TargetFramework=net9.0"];
 
             executables = ["dotnet-outdated"];
 

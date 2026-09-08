@@ -22,12 +22,13 @@
                 flake-parts-lib,
                 config,
                 projectLib,
+                withSystem,
                 ...
             }: let
                 inherit (flake-parts-lib) importApply;
                 devshellFlakeModule = importApply ./flake-module.nix {
                     localInputs = inputs;
-                    inherit projectLib;
+                    inherit projectLib withSystem;
                 };
             in {
                 imports = [

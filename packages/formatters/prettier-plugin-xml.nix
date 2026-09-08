@@ -2,22 +2,22 @@
     perSystem = {pkgs, ...}: {
         packages.prettier-plugin-xml = pkgs.stdenv.mkDerivation rec {
             pname = "prettier-plugin-xml";
-            version = "3.4.1";
+            version = "3.4.2";
 
             src = pkgs.fetchFromGitHub {
                 owner = "prettier";
                 repo = "plugin-xml";
-                rev = "v${version}";
-                hash = "sha256-7/0a00fdDso8yZyFkrBUwA2uxlN/pifSrKHGDjJS5Y0=";
+                rev = "2f602a5061de6d9842c91fca5a29397a2597a908";
+                hash = "sha256-48eGSb7hsXe9u9C5hkFtd32xDhR/Tb+eoZ8v7/0J2fM=";
             };
 
             yarnOfflineCache = pkgs.fetchYarnDeps {
                 yarnLock = src + "/yarn.lock";
-                hash = "sha256-VRUnlE8AQQJfPTMdexPZ/5jPFtU/qSV5GFM0pSLH9zI=";
+                hash = "sha256-FL7g4nbBV03eYIENEzhFIL7+qDli2c5qjz7N1zeLiN4=";
             };
 
             nativeBuildInputs = [
-                pkgs.nodejs_20
+                pkgs.nodejs
                 pkgs.yarnConfigHook
             ];
 
