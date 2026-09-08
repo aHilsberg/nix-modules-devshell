@@ -1,11 +1,11 @@
 {
     localInputs,
     projectLib,
-    withSystem,
 }: {
     lib,
     flake-parts-lib,
     self,
+    withSystem,
     ...
 }: {
     imports = [

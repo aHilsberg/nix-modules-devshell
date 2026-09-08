@@ -16,27 +16,22 @@
         files.url = "github:mightyiam/files";
     };
 
-    outputs = inputs @ {
-        nixpkgs,
-        flake-parts,
-        ...
-    }:
+    outputs = inputs @ {flake-parts, ...}:
         flake-parts.lib.mkFlake {inherit inputs;} (
             {
                 flake-parts-lib,
-                withSystem,
                 config,
+                projectLib,
                 ...
             }: let
-                projectLib = import ./lib.nix {inherit (nixpkgs) lib;};
                 inherit (flake-parts-lib) importApply;
                 devshellFlakeModule = importApply ./flake-module.nix {
                     localInputs = inputs;
-                    inherit projectLib withSystem;
+                    inherit projectLib;
                 };
             in {
-                _module.args.projectLib = projectLib;
                 imports = [
+                    ./lib.nix
                     ./pkgs.nix
                     (inputs.import-tree ./packages)
                     devshellFlakeModule
