@@ -66,6 +66,7 @@ in {
         formatter = lib.mkOption {
             type = lib.types.enum ["alejandra" "nixfmt"];
             default = "alejandra";
+            description = "Nix formatter to use for this shell.";
         };
     };
 

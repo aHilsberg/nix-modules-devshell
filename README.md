@@ -76,6 +76,27 @@ Opinionated, modular development shell configuration built on:
 - [Getting Started](./docs/getting-started.md) - Using the development environment
 - [Developer Guide](./docs/developer-guide.md) - Internal architecture and module system (for contributors)
 
+### Private documentation website
+
+From this repository's directory:
+
+```sh
+# nix build path:.#docsMdBook
+nix run path:.#documentation
+```
+
+Open <http://127.0.0.1:8000> for the guides and generated option reference.
+Stop the preview with Ctrl-C. The preview binds only to loopback; nothing is
+published or deployed. You can also open `result/index.html` directly after
+building, without starting a server.
+
+The `flake.parts-website` renderer generates the reference from this module's
+option declarations. Raw reference output is available with
+`nix build path:.#generated-docs-nix-modules-devshell` (in `result/options.md`).
+Dependencies may be downloaded during the build, but documentation is not uploaded.
+Build results live in the Nix store and are readable by other local users; this is
+not a secret-storage mechanism. Source declarations are bundled for offline links.
+
 ## Usage
 
 ### Entering the Shell

@@ -69,6 +69,22 @@
         "type": "github"
       }
     },
+    "flake-parts-website": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1788857431,
+        "narHash": "sha256-8oo3cDvcSfZCtohJfX+AY35gCwq13C1GbcZYoC+IfH4=",
+        "owner": "hercules-ci",
+        "repo": "flake.parts-website",
+        "rev": "71970b431ae9cce1ae96db17d26583327bd2be2b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "hercules-ci",
+        "repo": "flake.parts-website",
+        "type": "github"
+      }
+    },
     "git-hooks-nix": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -193,6 +209,7 @@
         "devshell": "devshell",
         "files": "files",
         "flake-parts": "flake-parts",
+        "flake-parts-website": "flake-parts-website",
         "git-hooks-nix": "git-hooks-nix",
         "import-tree": "import-tree",
         "nixpkgs": "nixpkgs_2",

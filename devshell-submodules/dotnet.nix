@@ -11,6 +11,7 @@
         sdk = lib.mkOption {
             type = lib.types.package;
             default = pkgs.dotnetCorePackages.sdk_10_0;
+            defaultText = lib.literalExpression "pkgs.dotnetCorePackages.sdk_10_0";
             example = lib.literalExpression ''
                 pkgs.dotnetCorePackages.combinePackages [
                   pkgs.dotnetCorePackages.sdk_8_0
