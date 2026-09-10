@@ -5,11 +5,6 @@
         nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
         flake-parts.url = "github:hercules-ci/flake-parts";
         import-tree.url = "github:vic/import-tree";
-        flake-parts-website = {
-            url = "github:hercules-ci/flake.parts-website";
-            # Only reuse the renderer, not the public site's module catalogue.
-            flake = false;
-        };
 
         devshell = {
             url = "github:numtide/devshell";

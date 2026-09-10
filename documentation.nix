@@ -1,41 +1,111 @@
-{inputs, self, ...}: {
-    imports = [
-        (inputs.flake-parts-website + "/render/render-module.nix")
-    ];
+{
+    inputs,
+    self,
+    lib,
+    flake-parts-lib,
+    ...
+}: {
+    perSystem = {
+        config,
+        pkgs,
+        ...
+    }: let
+        # Adapted from the evaluation, fixups and source filtering in:
+        # https://github.com/hercules-ci/flake.parts-website/blob/main/render/render-module.nix
+        # Compare against upstream revision 71970b431ae9cce1ae96db17d26583327bd2be2b.
+        # <- We document this single module, rather than upstream's configurable input catalogue.
+        failPkgAttr = name: _:
+            throw ''
+                pkgs.${name} is not available when generating documentation.
+                Add defaultText or a literalExpression example to the option that forces it.
+            '';
+        pkgsStub = lib.mapAttrs failPkgAttr pkgs;
+        fixups = {
+            options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
+                _module.args.pkgs =
+                    pkgsStub
+                    // {
+                        _type = "pkgs";
+                        inherit lib;
 
-    perSystem = {config, pkgs, ...}: {
-        render = {
-            officialFlakeInputs = {};
-            inputs = {
-                flake-parts = {
-                    flake = inputs.flake-parts;
-                    getModules = _: [];
-                    baseUrl = "https://github.com/hercules-ci/flake-parts/blob/main";
-                    intro = "Core flake-parts options.";
-                    menu.enable = false;
-                };
-                nix-modules-devshell = {
-                    flake = self;
-                    baseUrl = "../source";
-                    installation = ''
-                        ## Usage
-
-                        Import `inputs.nix-modules-devshell.flakeModule` in your flake-parts configuration
-                        and add the `inputs.devshell.overlays.default` overlay to pkgs.
-                        See the [getting started guide](../getting-started.md) for examples.
-                    '';
-                    intro = "Private option reference for nix-modules-devshell.";
-                };
-            };
+                        appendOverlays = _: config._module.args.pkgs;
+                        formats = lib.mapAttrs (formatName: formatFn: formatArgs: let
+                            result = formatFn formatArgs;
+                        in
+                            lib.mapAttrs (name: _:
+                                throw ''
+                                    pkgs.formats.${formatName}.${name} is not available when generating documentation.
+                                    Add defaultText or a literalExpression example to the option that forces it.
+                                '')
+                            result
+                            // {inherit (result) type;})
+                        pkgs.formats;
+                    };
+            });
         };
-
+        eval = evalWith {modules = [];};
+        evalWith = {
+            modules,
+            extraInputs ? {},
+        }:
+            inputs.flake-parts.lib.evalFlakeModule {
+                inputs =
+                    {
+                        inherit (inputs) nixpkgs;
+                        self =
+                            eval.config.flake
+                            // {
+                                outPath = throw ''
+                                    The self.outPath attribute is not available when generating documentation.
+                                    Use --show-trace to find the option default that needs defaultText.
+                                '';
+                            };
+                    }
+                    // extraInputs;
+            } {
+                imports = modules ++ [fixups];
+                systems = [
+                    (throw ''
+                        The systems option value is not available when generating documentation.
+                        Use --show-trace to find the option default that needs defaultText.
+                    '')
+                ];
+            };
+        # baseline option set; to exclude flake-parts options or other builtin options
+        coreOptionsDoc = pkgs.nixosOptionsDoc {
+            options = eval.options;
+        };
+        optionsDoc = pkgs.nixosOptionsDoc {
+            options = (evalWith {modules = [self.flakeModule];}).options;
+            documentType = "none";
+            warningsAreErrors = true;
+            transformOptions = opt: let
+                sourcePath = toString self.outPath;
+                declarations =
+                    opt.declarations
+                    |> lib.concatMap (decl:
+                        lib.optional (lib.hasPrefix sourcePath (toString decl)) {
+                            url = "../source" + lib.removePrefix sourcePath (toString decl);
+                            name = "nix-modules-devshell" + lib.removePrefix sourcePath (toString decl);
+                        });
+            in
+                if declarations == [] || builtins.hasAttr (lib.showOption opt.loc) coreOptionsDoc.optionsNix
+                then opt // {visible = false;}
+                else opt // {inherit declarations;};
+        };
+        optionsCommonMark = optionsDoc.optionsCommonMark.overrideAttrs {
+            extraArgs = ["--anchor-prefix" "opt-" "--anchor-style" "legacy"];
+        };
+    in {
+        packages.generated-docs-json = optionsDoc.optionsJSON;
+        packages.generated-docs-md = optionsCommonMark;
         packages.docsMdBook = pkgs.runCommand "nix-modules-devshell-documentation" {
             nativeBuildInputs = [pkgs.mdbook];
         } ''
             mkdir -p src/options src/source
             cp -r ${./docs}/. src/
             sed 's|(\./docs/|(|g' ${./README.md} > src/README.md
-            cp ${config.render.inputs.nix-modules-devshell.rendered.file} src/options/nix-modules-devshell.md
+            cat ${optionsCommonMark} >> src/options/nix-modules-devshell.md
             cp ${./flake-module.nix} src/source/flake-module.nix
             cp -r ${./modules} ${./devshell-submodules} src/source/
             cat > book.toml <<'EOF'

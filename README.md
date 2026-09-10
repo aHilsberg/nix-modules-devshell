@@ -18,6 +18,9 @@ Opinionated, modular development shell configuration built on:
 
 ## Quick Start
 
+Import `inputs.nix-modules-devshell.flakeModule` in your flake-parts configuration
+and add the `inputs.devshell.overlays.default` overlay to pkgs.
+
 ```nix
 {
   inputs = {
@@ -31,6 +34,7 @@ Opinionated, modular development shell configuration built on:
       imports = [
         inputs.nix-modules-devshell.flakeModule
       ];
+      # apply overlay, flake setup specific
 
       systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
 
@@ -90,9 +94,22 @@ Stop the preview with Ctrl-C. The preview binds only to loopback; nothing is
 published or deployed. You can also open `result/index.html` directly after
 building, without starting a server.
 
-The `flake.parts-website` renderer generates the reference from this module's
-option declarations. Raw reference output is available with
+`documentation.nix` evaluates this module with `flake-parts.lib.evalFlakeModule`
+and stores the result of `pkgs.nixosOptionsDoc` in the local `optionsDoc` variable.
+Its CommonMark output supplies the option reference rendered by mdBook; no external
+`flake.parts-website` renderer dependency is used. The evaluation guards and source
+filtering are adapted from [the upstream renderer](https://github.com/hercules-ci/flake.parts-website/blob/71970b431ae9cce1ae96db17d26583327bd2be2b/render/render-module.nix).
+
+Raw reference output is available with
 `nix build path:.#generated-docs-nix-modules-devshell` (in `result/options.md`).
+For the JSON output of the same `nixosOptionsDoc` invocation:
+
+```sh
+nix build path:.#docsJson --out-link result-json
+```
+
+The JSON file is `result-json/share/doc/nixos/options.json` (a Brotli-compressed
+copy is also included). Both outputs use the same option filtering and metadata.
 Dependencies may be downloaded during the build, but documentation is not uploaded.
 Build results live in the Nix store and are readable by other local users; this is
 not a secret-storage mechanism. Source declarations are bundled for offline links.
