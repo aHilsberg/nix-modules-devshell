@@ -15,6 +15,7 @@
                     name = "deno-fmt-config-from-editorconfig";
 
                     runtimeInputs = [
+                        pkgs.coreutils
                         pkgs.nushell
                         pkgs.deno
                         pkgs.editorconfig-core-c
@@ -25,7 +26,7 @@
                         set -euo pipefail
 
                         for file in "$@"; do
-                          config="$(mktemp --suffix .deno.json)"
+                          config="$(mktemp -t deno-fmt-config.XXXXXX)"
                           trap 'rm -f "$config"' EXIT
 
                           FILE="$file" nu --no-config-file ${./deno-fmt-config-from-editorconfig.nu} > "$config"
