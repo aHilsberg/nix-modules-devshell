@@ -14,6 +14,11 @@
         treefmt-nix.url = "github:numtide/treefmt-nix";
         git-hooks-nix.url = "github:cachix/git-hooks.nix";
         files.url = "github:mightyiam/files";
+
+        testing = {
+            url = "git+ssh://git@github.com/aHilsberg/nix-modules-testing.git";
+            inputs.flake-parts.follows = "flake-parts";
+        };
     };
 
     outputs = inputs @ {flake-parts, ...}:
@@ -32,10 +37,22 @@
                 };
             in {
                 imports = [
-                    ./documentation.nix
+                    inputs.flake-parts.flakeModules.modules
+                    inputs.testing.flakeModule
                     ./lib.nix
                     ./pkgs.nix
+
+                    ./documentation.nix
                     (inputs.import-tree ./packages)
+                    (inputs.import-tree.filterNot
+                    (path:
+                        inputs.nixpkgs.lib.hasSuffix ".lib.nix" path
+                        || inputs.nixpkgs.lib.hasSuffix ".no-auto-import.nix" path
+                        || inputs.nixpkgs.lib.hasInfix "/fixtures/" path
+                        || inputs.nixpkgs.lib.hasInfix "/data/" path
+                        || inputs.nixpkgs.lib.hasInfix "/snapshots/" path)
+                    ./tests)
+
                     devshellFlakeModule
                 ];
 
@@ -45,43 +62,34 @@
                     "aarch64-darwin"
                 ];
 
-                flake.overlays = {default = inputs.devshell.overlays.default;};
+                flake.overlays = {
+                    default = inputs.devshell.overlays.default;
+                    nushell = final: prev: {
+                        nushell =
+                            inputs.testing.inputs.nixpkgs.legacyPackages.${prev.stdenv.hostPlatform.system}.nushell;
+                    };
+                };
 
                 flake.flakeModule = config.flake.flakeModules.default;
                 flake.flakeModules.default = devshellFlakeModule;
 
                 perSystem = {...}: {
-                    gitignore.enable = true;
+                    gitignore = {
+                        enable = true;
+                        entries = [
+                            ".data/"
+                        ];
+                    };
+                    formatting.excludes = [
+                        "tests/data/**"
+                        "tests/fixtures/**"
+                        "tests/snapshots/**"
+                    ];
                     formatting.enable = true;
                     git-hooks.enable = true;
 
-                    startup = {
-                        test.text = ''
-                            echo "Hi from devshell"
-                        '';
-                    };
-
                     devshells.default = {
-                        # packages = [pkgs.hello];
-                        # env = [
-                        #   {
-                        #     name = "TESTING";
-                        #     value = "WORKS";
-                        #   }
-                        # ];
-
-                        # dotnet = {
-                        #   enable = true;
-                        #   testing.snapshots = true;
-                        # sdk = pkgs.dotnetCorePackages.combinePackages [
-                        #   pkgs.dotnetCorePackages.sdk_8_0
-                        #   pkgs.dotnetCorePackages.sdk_10_0
-                        # ];
-                        # };
-                        json.enable = true;
                         markdown.enable = true;
-                        # xml.enable = true;
-                        yaml.enable = true;
                         nix.enable = true;
                     };
                 };

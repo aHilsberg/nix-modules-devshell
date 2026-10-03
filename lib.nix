@@ -8,18 +8,20 @@
     overlayNames = lib.sort lib.lessThan (builtins.attrNames self.overlays);
     overlaysAll = map (n: self.overlays.${n}) overlayNames;
 
-    projectLib = {
-        mkPkgs = system:
-            import inputs.nixpkgs {
-                inherit system;
-                overlays = overlaysAll;
-                config.allowUnfree = true;
+    projectLib =
+        {
+            mkPkgs = system:
+                import inputs.nixpkgs {
+                    inherit system;
+                    overlays = overlaysAll;
+                    config.allowUnfree = true;
+                };
+            mkDevShellDefault = lib.mkOverride 60;
+            types = {
+                strOrPackage = lib.types.either lib.types.str lib.types.package;
             };
-        mkDevShellDefault = lib.mkOverride 60;
-        types = {
-            strOrPackage = lib.types.either lib.types.str lib.types.package;
-        };
-    };
+        }
+        // (import ./tests/test.lib.nix {inherit self inputs lib;});
 in {
     _module.args.projectLib = projectLib;
 }
