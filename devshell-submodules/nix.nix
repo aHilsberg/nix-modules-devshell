@@ -22,30 +22,20 @@
     editorconfigText = builtins.readFile editorconfigEvaluated;
 
     lines = lib.splitString "\n" editorconfigText;
-    trim = lib.strings.trim;
-
     parseKv = line: let
         m = builtins.match "[[:space:]]*([^=[:space:]]+)[[:space:]]*=[[:space:]]*(.*)" line;
     in
-        if trim line == "" || m == null
+        if lib.strings.trim line == "" || m == null
         then null
         else {
-            key = trim (builtins.elemAt m 0);
-            value = trim (builtins.elemAt m 1);
+            name = lib.strings.trim (builtins.elemAt m 0);
+            value = lib.strings.trim (builtins.elemAt m 1);
         };
-
-    entries = builtins.filter (x: x != null) (map parseKv lines);
-
-    getValue = name: let
-        matches = builtins.filter (x: x.key == name) entries;
-    in
-        if matches == []
-        then null
-        else (builtins.head matches).value;
+    editorconfig = builtins.listToAttrs (builtins.filter (entry: entry != null) (map parseKv lines));
+    getValue = name: editorconfig.${name} or null;
 
     indentStyle = getValue "indent_style";
     indentSize = getValue "indent_size";
-
     indentation =
         if indentStyle == "tab"
         then "Tabs"
