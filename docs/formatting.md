@@ -5,6 +5,8 @@
 - [Why treefmt?](#why-treefmt)
 - [treefmt-nix Integration](#treefmt-nix-integration)
 - [Configured Formatters](#configured-formatters)
+    - [Python and EditorConfig](#python-and-editorconfig)
+    - [YAML and EditorConfig](#yaml-and-editorconfig)
 - [Developer Guide: Defining Formatters](#developer-guide)
     - [Architecture: One Global treefmt, Multiple Shell Contributions](#architecture-one-global-treefmt-multiple-shell-contributions)
     - [Module Structure](#module-structure)
@@ -41,12 +43,64 @@ Since we use Nix, `treefmt-nix` enables:
 | --------------- | --------------------- | ---------------------------------- |
 | **Nix**         | alejandra             | `devshell-submodules/nix.nix`      |
 | **Nix**         | deadnix (dead code)   | `devshell-submodules/nix.nix`      |
+| **Python**      | ruff check --fix      | `devshell-submodules/python.nix`   |
+| **Python**      | ruff format           | `devshell-submodules/python.nix`   |
 | **C#**          | JetBrains cleanupcode | `devshell-submodules/dotnet.nix`   |
 | **XML/RESX**    | prettier (plugin-xml) | `devshell-submodules/xml.nix`      |
 | **Markdown**    | prettier              | `devshell-submodules/markdown.nix` |
-| **YAML**        | prettier              | `devshell-submodules/yaml.nix`     |
+| **YAML**        | deno fmt              | `devshell-submodules/yaml.nix`     |
 | **JSON**        | prettier              | `devshell-submodules/json.nix`     |
 | **Dockerfile**  | dockerfmt             | `devshell-submodules/docker.nix`   |
+
+#### Python and EditorConfig <a id="python-and-editorconfig"></a>
+
+Enabling `devshells.<name>.python.enable` automatically registers treefmt programs
+`ruff-check` and `ruff-format` for `*.py` and `*.pyi`. `ruff-check` runs
+`ruff check --fix` at priority **1**, followed by `ruff-format` running
+`ruff format` at priority **2**.
+
+Both programs use a shared Ruff wrapper that reads the project's `.editorconfig`
+with `editorconfig-core-c`.
+Settings are resolved against the representative root-level path `self + "/python.py"`;
+
+| EditorConfig setting                                  | Ruff override                              |
+| ----------------------------------------------------- | ------------------------------------------ |
+| `indent_style = space` or `tab`                       | `format.indent-style = "space"` or `"tab"` |
+| Numeric `indent_size` in Ruff's range 1–255           | `indent-width`                             |
+| `indent_size = tab` with numeric `tab_width` in 1–255 | `indent-width` from `tab_width`            |
+| Numeric `max_line_length` in Ruff's range 1–320       | `line-length`                              |
+| `end_of_line = lf` or `crlf`                          | `format.line-ending = "lf"` or `"crlf"`    |
+
+> [!note] This is **not full EditorConfig support**: for example there are no Ruff equivalents for
+> `charset`, `trim_trailing_whitespace`, `insert_final_newline = false`,
+> | `end_of_line = lf` or `crlf` | `format.line-ending = "lf"` or `"cr-lf"` |
+
+The wrapper passes individual `--config key=value` overrides, preserving Ruff's
+discovered project configuration and rules except that the mapped settings take
+precedence.
+
+#### YAML and EditorConfig <a id="yaml-and-editorconfig"></a>
+
+Enabling `devshells.<name>.yaml.enable` registers Deno formatting for both `*.yaml`
+and `*.yml`. Like the Python and Nix integrations, EditorConfig is resolved during
+Nix evaluation using `editorconfig-core-c` (import from derivation), not when the
+formatter runs. YAML uses the representative root-level path `self + "/any.yaml"`
+and generates one immutable Deno configuration for all YAML files.
+
+Only the source snapshot's root `.editorconfig` is checked for existence. Rules
+matching `any.yaml` determine the settings for **both extensions**; `.yml`-specific
+rules and nested `.editorconfig` files do not provide per-file overrides. Use
+`root = true` in the root configuration to stop EditorConfig ancestor lookup.
+Working-tree configuration edits require reevaluating/rebuilding the formatter;
+an existing formatter executable keeps its generated settings.
+
+The mapping retains `indent_style` to `useTabs`, `indent_size` to `indentWidth`
+(using `tab_width` when `indent_size = tab`), and `max_line_length` to `lineWidth`.
+Only `space`/`tab` indentation styles and positive integer widths are emitted.
+Missing, empty, `unset`, `off`, or invalid values are omitted, leaving Deno to use
+its own defaults rather than supplying fallback values or JSON `null`. Other
+EditorConfig properties are not mapped. The generated config is passed explicitly
+with `--config`; it is not merged with a discovered project Deno configuration.
 
 ### Developer Guide: Defining Formatters <a id="developer-guide"></a>
 

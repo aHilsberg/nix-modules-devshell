@@ -234,18 +234,19 @@ perSystem = {
 
 These define **per-devshell options** for language/tool support:
 
-| Submodule             | Purpose                                           |
-| --------------------- | ------------------------------------------------- |
-| `core.nix`            | Base shell options (`packages`, `env`, `startup`) |
-| `dotnet.nix`          | .NET SDK and tooling                              |
-| `nix.nix`             | Nix formatting (alejandra, deadnix)               |
-| `json.nix`            | JSON formatting                                   |
-| `yaml.nix`            | YAML formatting                                   |
-| `markdown.nix`        | Markdown formatting                               |
-| `xml.nix`             | XML formatting                                    |
-| `docker.nix`          | Dockerfile formatting                             |
-| `git-hooks.nix`       | Adds git-hooks package to shell                   |
-| `file-generation.nix` | Adds file generation package to shell             |
+| Submodule             | Purpose                                             |
+| --------------------- | --------------------------------------------------- |
+| `core.nix`            | Base shell options (`packages`, `env`, `startup`)   |
+| `dotnet.nix`          | .NET SDK and tooling                                |
+| `nix.nix`             | Nix formatting (alejandra, deadnix)                 |
+| `python.nix`          | Python (`withPackages`), Ruff lint fixes/formatting |
+| `json.nix`            | JSON formatting                                     |
+| `yaml.nix`            | YAML formatting                                     |
+| `markdown.nix`        | Markdown formatting                                 |
+| `xml.nix`             | XML formatting                                      |
+| `docker.nix`          | Dockerfile formatting                               |
+| `git-hooks.nix`       | Adds git-hooks package to shell                     |
+| `file-generation.nix` | Adds file generation package to shell               |
 
 **Options declared here are accessed as:**
 

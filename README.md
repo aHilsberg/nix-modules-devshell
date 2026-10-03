@@ -73,6 +73,7 @@ and add the `inputs.devshell.overlays.default` overlay to pkgs.
 | `xml`      | XML/RESX formatting with Prettier plugin-xml                      |
 | `docker`   | Dockerfile formatting with dockerfmt                              |
 | `nix`      | Nix formatting (alejandra) and linting (deadnix)                  |
+| `python`   | Python interpreter environment, Ruff lint fixes and formatting    |
 
 ## Documentation
 
@@ -130,6 +131,31 @@ Without direnv:
 ```bash
 nix develop
 ```
+
+### Python
+
+Enable Python in a devshell, optionally selecting an interpreter and packages:
+
+```nix
+perSystem = {pkgs, ...}: {
+  formatting.enable = true;
+  devshells.default.python = {
+    enable = true;
+    package = pkgs.python3;
+    extraPackages = ps: [ps.requests];
+  };
+};
+```
+
+`python.enable` defaults to `false`, `python.package` to `pkgs.python3`, and
+`python.extraPackages` to `_: []`. The package function receives the selected
+interpreter's package set; the shell uses `python.package.withPackages` to build
+its interpreter environment.
+
+Enabling Python also registers Ruff lint fixes followed by formatting for `*.py`
+and `*.pyi`; global `formatting.enable` still gates formatting. There are no
+separate Python formatting flags. See [Formatting](./docs/formatting.md#python-and-editorconfig)
+for the limited EditorConfig mapping and Ruff configuration precedence.
 
 ### Formatting
 
