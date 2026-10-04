@@ -13,10 +13,13 @@
 
         treefmt-nix.url = "github:numtide/treefmt-nix";
         git-hooks-nix.url = "github:cachix/git-hooks.nix";
-        files.url = "github:mightyiam/files";
+        files = {
+            url = "github:mightyiam/files";
+            flake = false;
+        };
 
         testing = {
-            url = "git+ssh://git@github.com/aHilsberg/nix-modules-testing.git";
+            url = "github:USE-MY-ENERGY-GmbH/nix-modules-testing";
             inputs.flake-parts.follows = "flake-parts";
         };
     };
@@ -64,7 +67,7 @@
 
                 flake.overlays = {
                     default = inputs.devshell.overlays.default;
-                    nushell = final: prev: {
+                    nushell = _: prev: {
                         nushell =
                             inputs.testing.inputs.nixpkgs.legacyPackages.${prev.stdenv.hostPlatform.system}.nushell;
                     };

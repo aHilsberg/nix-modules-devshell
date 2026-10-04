@@ -1,6 +1,6 @@
 {localInputs, ...}: {...}: {
     imports = [
-        localInputs.files.flakeModules.default
+        "${localInputs.files}/flake-module.nix"
     ];
 
     perSystem = {config, ...}: {
