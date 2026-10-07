@@ -76,20 +76,31 @@
                 flake.flakeModule = config.flake.flakeModules.default;
                 flake.flakeModules.default = devshellFlakeModule;
 
-                perSystem = {...}: {
+                perSystem = {pkgs, ...}: {
+                    formatting = {
+                        enable = true;
+                        excludes = [
+                            "tests/data/**"
+                            "tests/fixtures/**"
+                            "tests/snapshots/**"
+                        ];
+                    };
+                    
                     gitignore = {
                         enable = true;
                         entries = [
                             ".data/"
                         ];
                     };
-                    formatting.excludes = [
-                        "tests/data/**"
-                        "tests/fixtures/**"
-                        "tests/snapshots/**"
-                    ];
-                    formatting.enable = true;
+                    
                     git-hooks.enable = true;
+                    pre-commit.settings.hooks.tests = {
+                        enable = true;
+                        entry = "${pkgs.nix}/bin/nix --extra-experimental-features 'nix-command flakes pipe-operators' run .#tests -- run";
+                        pass_filenames = false;
+                        always_run = true;
+                        stages = ["pre-push"];
+                    };
 
                     devshells.default = {
                         markdown.enable = true;
