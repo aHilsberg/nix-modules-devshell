@@ -55,7 +55,7 @@ in {
         enable = lib.mkEnableOption "Nix formatting for this shell";
         formatter = lib.mkOption {
             type = lib.types.enum ["alejandra" "nixfmt"];
-            default = "alejandra";
+            default = "nixfmt";
             description = "Nix formatter to use for this shell.";
         };
     };

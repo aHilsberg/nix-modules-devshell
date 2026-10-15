@@ -238,7 +238,7 @@ These define **per-devshell options** for language/tool support:
 | --------------------- | --------------------------------------------------- |
 | `core.nix`            | Base shell options (`packages`, `env`, `startup`)   |
 | `dotnet.nix`          | .NET SDK and tooling                                |
-| `nix.nix`             | Nix formatting (alejandra, deadnix)                 |
+| `nix.nix`             | Nix formatting (nixfmt, deadnix)               |
 | `python.nix`          | Python (`withPackages`), Ruff lint fixes/formatting |
 | `json.nix`            | JSON formatting                                     |
 | `yaml.nix`            | YAML formatting                                     |
@@ -305,7 +305,7 @@ config.treefmt = lib.mkMerge (
 **Example flow:**
 
 1. `modules/formatting.nix` injects `formatting.treefmt` option into submodules
-2. `devshell-submodules/nix.nix` sets `config.formatting.treefmt.programs.alejandra.enable = true`
+2. `devshell-submodules/nix.nix` sets `config.formatting.treefmt.programs.nixfmt.enable = true`
 3. `modules/formatting.nix` aggregates all `formatting.treefmt` values into the global `treefmt` config
 
 ### <a id="persystem-to-submodules"></a>Direction 2: perSystem → Submodules (Dependencies)

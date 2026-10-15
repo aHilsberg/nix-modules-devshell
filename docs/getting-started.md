@@ -127,7 +127,7 @@ The devshell supports various language and tool modules that can be enabled:
 | `yaml`     | YAML formatting with Prettier             |
 | `xml`      | XML formatting with Prettier (plugin-xml) |
 | `docker`   | Dockerfile formatting with dockerfmt      |
-| `nix`      | Nix formatting with alejandra and deadnix |
+| `nix`      | Nix formatting with nixfmt and deadnix |
 
 ### <a id="enabling-modules"></a>Enabling Modules
 

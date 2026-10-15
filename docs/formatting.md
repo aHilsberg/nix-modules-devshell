@@ -41,7 +41,7 @@ Since we use Nix, `treefmt-nix` enables:
 
 | Language/Format | Formatter             | Configuration File                 |
 | --------------- | --------------------- | ---------------------------------- |
-| **Nix**         | alejandra             | `devshell-submodules/nix.nix`      |
+| **Nix**         | nixfmt (default)      | `devshell-submodules/nix.nix`      |
 | **Nix**         | deadnix (dead code)   | `devshell-submodules/nix.nix`      |
 | **Python**      | ruff check --fix      | `devshell-submodules/python.nix`   |
 | **Python**      | ruff format           | `devshell-submodules/python.nix`   |

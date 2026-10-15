@@ -72,7 +72,7 @@ and add the `inputs.devshell.overlays.default` overlay to pkgs.
 | `yaml`     | YAML formatting with Prettier                                     |
 | `xml`      | XML/RESX formatting with Prettier plugin-xml                      |
 | `docker`   | Dockerfile formatting with dockerfmt                              |
-| `nix`      | Nix formatting (alejandra) and linting (deadnix)                  |
+| `nix`      | Nix formatting (nixfmt) and linting (deadnix)                  |
 | `python`   | Python interpreter environment, Ruff lint fixes and formatting    |
 
 ## Documentation
