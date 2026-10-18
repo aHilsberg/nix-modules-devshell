@@ -1,0 +1,5 @@
+# For hotreload of the mdBook, files are generated/copied into the docs dir,
+# they shouldn't be versioned.
+/README.md
+/options/
+/source/

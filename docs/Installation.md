@@ -1,21 +1,28 @@
-# Installation
+---
+role:
+  - developers
+topic:
+  - installation
+  - direnv
+type: how_to
+last-substantial-update: "2026-04-16"
+---
 
-This guide covers the installation of Nix and optional tools to use the nix-modules-devshell development environment.
+# Installation {#installation}
 
-## Table of Contents
+## Table of Contents {#table-of-contents}
 
-- [Adding to Your Project](#adding-to-your-project)
-    - [Importing the Flake Module](#importing-the-flake-module)
-    - [Consuming the Devshell Overlay](#consuming-the-devshell-overlay)
+- [Adding the module to your project](#adding-to-your-project)
+    - [Importing the flake module](#importing-the-flake-module)
+    - [Consuming the devshell overlay](#consuming-the-devshell-overlay)
 - [Prerequisites](#prerequisites)
     - [Installing Nix](#installing-nix)
     - [Installing direnv (Optional but Recommended)](#installing-direnv)
 - [Verifying Installation](#verifying-installation)
-- [Next Steps](#next-steps)
 
-## <a id="adding-to-your-project"></a>Adding to Your Project
+## Adding to Your Project {#adding-to-your-project}
 
-### <a id="importing-the-flake-module"></a>Importing the Flake Module
+### Importing the Flake Module {#importing-the-flake-module}
 
 This project provides a [flake-parts](https://flake.parts) module that you must import into your flake configuration.
 
@@ -53,7 +60,7 @@ Add the input and import the module:
 }
 ```
 
-### <a id="consuming-the-devshell-overlay"></a>Consuming the Devshell Overlay
+### Consuming the Devshell Overlay {#consuming-the-devshell-overlay}
 
 When using this flake module, you **must** consume the devshell overlay that is exposed by this flake. The overlay is required for the devshell functionality to work properly.
 
@@ -81,8 +88,8 @@ When using this flake module, you **must** consume the devshell overlay that is 
       # Apply the overlay when creating your pkgs
       perSystem = {system, ...}: {
         _module.args.pkgs = import inputs.nixpkgs {
-        inherit system;
-        overlays = [inputs.nix-modules-devshell.overlays.default];
+            inherit system;
+            overlays = [inputs.nix-modules-devshell.overlays.default];
         };
 
         formatting.enable = true;
@@ -94,13 +101,13 @@ When using this flake module, you **must** consume the devshell overlay that is 
 }
 ```
 
-## <a id="prerequisites"></a>Prerequisites
+## Prerequisites {#prerequisites}
 
-### <a id="installing-nix"></a>Installing Nix
+### Installing Nix {#installing-nix}
 
 To use this development environment, you need Nix with Flakes enabled.
 
-#### Recommended: Determinate Systems Installer
+#### Recommended: Determinate Systems Installer {#recommended-determinate-systems-installer}
 
 The [Determinate Systems Nix Installer](https://github.com/DeterminateSystems/nix-installer) provides the simplest installation experience with Flakes enabled by default:
 
@@ -108,19 +115,24 @@ The [Determinate Systems Nix Installer](https://github.com/DeterminateSystems/ni
 curl -fsSL https://install.determinate.systems/nix | sh -s -- install
 ```
 
-#### Alternative: Official Nix Installer
+#### Alternative: Official Nix Installer {#alternative-official-nix-installer}
 
-Follow the [official Nix installation guide](https://nixos.org/download.html) for your platform, then enable Flakes by adding the following to `~/.config/nix/nix.conf`:
+Follow the [official Nix installation guide](https://nixos.org/download.html) for your platform
+
+
+#### Enabling Flakes {#enabling-flakes}
+
+Enable Flakes by adding the following to `~/.config/nix/nix.conf`:
 
 ```
 experimental-features = nix-command flakes
 ```
 
-### <a id="installing-direnv"></a>Installing direnv (Optional but Recommended)
+### Installing direnv (Optional but Recommended) {#installing-direnv}
 
 **direnv** automatically activates the Nix development environment when you enter the project directory. Without direnv, you must manually run `nix develop` each time you open a new terminal.
 
-#### Installation
+#### Installation {#installation-1}
 
 ```bash
 # macOS (Homebrew)
@@ -136,7 +148,7 @@ sudo pacman -S direnv
 nix profile install nixpkgs#direnv
 ```
 
-#### Shell Integration
+#### Shell Integration {#shell-integration}
 
 Add the appropriate hook to your shell configuration file:
 
@@ -153,7 +165,7 @@ direnv hook fish | source
 
 After adding the hook, restart your terminal or reload your shell configuration.
 
-#### First-time Setup
+#### First-time Setup {#first-time-setup}
 
 When entering a project directory with an `.envrc` file for the first time:
 
@@ -167,7 +179,7 @@ The environment activates when entering the directory and deactivates when leavi
 
 For more information, see the [direnv documentation](https://direnv.net/).
 
-#### Creating the .envrc File
+#### Creating the .envrc File {#creating-the-envrc-file}
 
 Projects using this devshell module can use a `.envrc` file in their repository root. Create the file with the following content:
 
@@ -204,7 +216,7 @@ watch_dir nix
 watch_dir modules
 ```
 
-## <a id="verifying-installation"></a>Verifying Installation
+## Verifying Installation {#verifying-installation}
 
 After installation, verify everything works:
 
@@ -218,7 +230,3 @@ nix flake --help
 # Check direnv (if installed)
 direnv --version
 ```
-
-## <a id="next-steps"></a>Next Steps
-
-See the [Getting Started](./getting-started.md) guide to learn how to use the development environment.

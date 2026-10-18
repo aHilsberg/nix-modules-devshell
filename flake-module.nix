@@ -52,9 +52,9 @@
 
                         specialArgs = {
                             inherit pkgs system projectLib self;
-                            perSysCfg = config;
-                            # make local config and packages accessible in submodules
+                            # make local perSystem config and packages accessible in submodules
                             # see https://flake.parts/dogfood-a-reusable-module.html
+                            perSysCfg = config;
                             customPkgs = withSystem system (
                                 {config, ...}: config.packages
                             );

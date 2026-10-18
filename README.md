@@ -1,12 +1,20 @@
+---
+role:
+  - developers
+type: overview
+topic:
+  - devshell
+last-substantial-update: null
+---
+
 # nix-modules-devshell
 
-Opinionated, modular development shell configuration built on:
+Opinionated, modular configuration for development shells.
+Allowing adding of packages, scripts, formating, git hooks and repository files in repo.
+Reproducible for every developer and CI.
 
-- [numtide/devshell](https://github.com/numtide/devshell)
-- [flake-parts](https://github.com/hercules-ci/flake-parts)
-- [treefmt-nix](https://github.com/numtide/treefmt-nix)
-- [mightyiam/files](https://github.com/mightyiam/files)
-- [cachix/git-hooks.nix](https://github.com/cachix/git-hooks.nix)
+Provides collection of opinionated packages, formating and utilities for language stacks to
+unify and simplify development shell configuration of consumer projects.
 
 ## Features
 
@@ -18,8 +26,13 @@ Opinionated, modular development shell configuration built on:
 
 ## Quick Start
 
-Import `inputs.nix-modules-devshell.flakeModule` in your flake-parts configuration
-and add the `inputs.devshell.overlays.default` overlay to pkgs.
+>See [Installation](./docs/Installation.md) for details, and how to setup automatic entry into a development shell when entering a directory.
+>
+>See [Quick Start](./docs/Getting_Started.md) for a intro into the capabilities provided by nix-modules-devshell.
+
+### Install
+
+Import `flakeModule`/`flakeModules.default` in the consumer flake and add the `overlays.default` overlay to pkgs.
 
 ```nix
 {
@@ -38,6 +51,7 @@ and add the `inputs.devshell.overlays.default` overlay to pkgs.
 
       systems = ["x86_64-linux" "aarch64-linux" "aarch64-darwin"];
 
+      # example configuration
       perSystem = {pkgs, ...}: {
         formatting.enable = true;
 
@@ -62,62 +76,7 @@ and add the `inputs.devshell.overlays.default` overlay to pkgs.
 }
 ```
 
-## Available Modules
-
-| Module     | Description                                                       |
-| ---------- | ----------------------------------------------------------------- |
-| `dotnet`   | .NET SDK, testing tooling, Formatting with JetBrains code cleanup |
-| `json`     | JSON/JSONC formatting with Prettier                               |
-| `markdown` | Markdown formatting with Prettier                                 |
-| `yaml`     | YAML formatting with Prettier                                     |
-| `xml`      | XML/RESX formatting with Prettier plugin-xml                      |
-| `docker`   | Dockerfile formatting with dockerfmt                              |
-| `nix`      | Nix formatting (nixfmt) and linting (deadnix)                  |
-| `python`   | Python interpreter environment, Ruff lint fixes and formatting    |
-
-## Documentation
-
-- [Installation](./docs/installation.md) - Installing Nix and direnv
-- [Getting Started](./docs/getting-started.md) - Using the development environment
-- [Developer Guide](./docs/developer-guide.md) - Internal architecture and module system (for contributors)
-
-### Private documentation website
-
-From this repository's directory:
-
-```sh
-# nix build path:.#docsMdBook
-nix run path:.#documentation
-```
-
-Open <http://127.0.0.1:8000> for the guides and generated option reference.
-Stop the preview with Ctrl-C. The preview binds only to loopback; nothing is
-published or deployed. You can also open `result/index.html` directly after
-building, without starting a server.
-
-`documentation.nix` evaluates this module with `flake-parts.lib.evalFlakeModule`
-and stores the result of `pkgs.nixosOptionsDoc` in the local `optionsDoc` variable.
-Its CommonMark output supplies the option reference rendered by mdBook; no external
-`flake.parts-website` renderer dependency is used. The evaluation guards and source
-filtering are adapted from [the upstream renderer](https://github.com/hercules-ci/flake.parts-website/blob/71970b431ae9cce1ae96db17d26583327bd2be2b/render/render-module.nix).
-
-Raw reference output is available with
-`nix build path:.#generated-docs-nix-modules-devshell` (in `result/options.md`).
-For the JSON output of the same `nixosOptionsDoc` invocation:
-
-```sh
-nix build path:.#docsJson --out-link result-json
-```
-
-The JSON file is `result-json/share/doc/nixos/options.json` (a Brotli-compressed
-copy is also included). Both outputs use the same option filtering and metadata.
-Dependencies may be downloaded during the build, but documentation is not uploaded.
-Build results live in the Nix store and are readable by other local users; this is
-not a secret-storage mechanism. Source declarations are bundled for offline links.
-
-## Usage
-
-### Entering the Shell
+### Enter the Shell
 
 With direnv (recommended):
 
@@ -131,31 +90,6 @@ Without direnv:
 ```bash
 nix develop
 ```
-
-### Python
-
-Enable Python in a devshell, optionally selecting an interpreter and packages:
-
-```nix
-perSystem = {pkgs, ...}: {
-  formatting.enable = true;
-  devshells.default.python = {
-    enable = true;
-    package = pkgs.python3;
-    extraPackages = ps: [ps.requests];
-  };
-};
-```
-
-`python.enable` defaults to `false`, `python.package` to `pkgs.python3`, and
-`python.extraPackages` to `_: []`. The package function receives the selected
-interpreter's package set; the shell uses `python.package.withPackages` to build
-its interpreter environment.
-
-Enabling Python also registers Ruff lint fixes followed by formatting for `*.py`
-and `*.pyi`; global `formatting.enable` still gates formatting. There are no
-separate Python formatting flags. See [Formatting](./docs/formatting.md#python-and-editorconfig)
-for the limited EditorConfig mapping and Ruff configuration precedence.
 
 ### Formatting
 
@@ -172,13 +106,34 @@ nix fmt -- path/to/file.nix
 
 ### Nix-Managed Files
 
-Regenerate files declared via the `files` module:
+Regenerate files declared via the `files` configuration:
 
 ```bash
 nix run .#generate-nix-managed-files
 ```
 
-**Note:** Nix-managed files are read-only. Manual changes will be overwritten and cause CI to fail.
+**Note:** Nix-managed files are read-only. Manual changes will be overwritten and cause CI (if git hooks are used) to fail.
+
+## Available Language Stack Modules
+
+| Module     | Contents                                                       |
+| ---------- | ----------------------------------------------------------------- |
+| `dotnet`   | .NET SDK, dependency versioning util, testing tooling, Formatting with JetBrains code cleanup |
+| `json`     | JSON/JSONC formatting with Prettier                               |
+| `markdown` | Markdown formatting with Prettier                                 |
+| `yaml`     | YAML formatting with deno                                     |
+| `xml`      | XML/RESX formatting with Prettier plugin-xml                      |
+| `docker`   | Dockerfile formatting with dockerfmt                              |
+| `nix`      | Nix formatting (nixfmt) and linting (deadnix)                  |
+| `python`   | Python interpreter environment, Ruff lint fixes and formatting    |
+
+## References / Projects that have been build upon
+
+- [numtide/devshell](https://github.com/numtide/devshell)
+- [flake-parts](https://github.com/hercules-ci/flake-parts)
+- [treefmt-nix](https://github.com/numtide/treefmt-nix)
+- [mightyiam/files](https://github.com/mightyiam/files)
+- [cachix/git-hooks.nix](https://github.com/cachix/git-hooks.nix)
 
 ## License
 

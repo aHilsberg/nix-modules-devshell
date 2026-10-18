@@ -1,10 +1,17 @@
-# Developer Guide
+---
+role:
+  - maintainers
+type: overview
+topic:
+  - module-system
+last-substantial-update: "2026-10-15"
+---
+
+# Developer Guide {#developer-guide}
 
 This guide explains the internal architecture of `nix-modules-devshell` for developers who want to understand, contribute to, or extend the codebase.
 
-> **Note:** This is developer documentation. For usage instructions, see the [README](../README.md) and [Getting Started](./getting-started.md).
-
-## Table of Contents
+## Table of Contents {#table-of-contents}
 
 - [Overview](#overview)
 - [Entry Points](#entry-points)
@@ -26,7 +33,7 @@ This guide explains the internal architecture of `nix-modules-devshell` for deve
     - [Adding Submodule Options from perSystem](#adding-submodule-options-from-persystem)
 - [Key Files Reference](#key-files-reference)
 
-## <a id="overview"></a>Overview
+## Overview {#overview}
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -46,9 +53,9 @@ This guide explains the internal architecture of `nix-modules-devshell` for deve
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## <a id="entry-points"></a>Entry Points
+## Entry Points {#entry-points}
 
-### <a id="flake-nix"></a>`flake.nix`
+### `flake.nix` {#flake-nix}
 
 The flake exposes the module for consumers using `importApply` to inject local flake arguments:
 
@@ -70,7 +77,7 @@ outputs = inputs @ {...}:
 
 This flake also **dogfoods** its own module by importing `devshellFlakeModule` directly, allowing us to test the module system on itself.
 
-### <a id="flake-module-nix"></a>`flake-module.nix`
+### `flake-module.nix` {#flake-module-nix}
 
 The main entry point that consumers import. It:
 
@@ -116,9 +123,9 @@ The main entry point that consumers import. It:
 }
 ```
 
-## <a id="module-argument-injection"></a>Module Argument Injection
+## Module Argument Injection {#module-argument-injection}
 
-### <a id="the-problem"></a>The Problem
+### The Problem {#the-problem}
 
 Modules in `modules/` need access to flake-level values like `localInputs` (to import other flake modules) and `projectLib` (for shared utilities). However, we can't use `_module.args` for this because:
 
@@ -139,7 +146,7 @@ Modules in `modules/` need access to flake-level values like `localInputs` (to i
 }
 ```
 
-### <a id="the-solution-importtreeapply"></a>The Solution: importTreeApply
+### The Solution: importTreeApply {#the-solution-importtreeapply}
 
 We use `import-tree`'s `.map` function combined with a curried function pattern to inject arguments at import time, before the module system evaluates:
 
@@ -159,7 +166,7 @@ This:
 3. Imports each file and immediately calls it with `{localInputs, projectLib}`
 4. The result is a standard flake-parts module that can be evaluated normally
 
-### <a id="module-pattern"></a>Module Pattern
+### Module Pattern {#module-pattern}
 
 All modules in `modules/` must use the **nested function pattern**:
 
@@ -206,11 +213,11 @@ All modules in `modules/` must use the **nested function pattern**:
 }
 ```
 
-## <a id="module-system"></a>Module System
+## Module System {#module-system}
 
 The configuration has two layers:
 
-### <a id="persystem-modules"></a>1. perSystem Modules (`modules/`)
+### 1. perSystem Modules (`modules/`) {#persystem-modules}
 
 These define **flake-wide options** that apply across all devshells:
 
@@ -230,7 +237,7 @@ perSystem = {
 };
 ```
 
-### <a id="devshell-submodules"></a>2. Devshell Submodules (`devshell-submodules/`)
+### 2. Devshell Submodules (`devshell-submodules/`) {#devshell-submodules}
 
 These define **per-devshell options** for language/tool support:
 
@@ -262,11 +269,11 @@ perSystem = {
 
 > **Note:** Devshell submodules use standard module syntax (not nested functions) because they receive arguments via `specialArgs` instead of import-time injection.
 
-## <a id="communication-between-scopes"></a>Communication Between Scopes
+## Communication Between Scopes {#communication-between-scopes}
 
 The two module layers need to communicate in both directions:
 
-### <a id="submodules-to-persystem"></a>Direction 1: Submodules → perSystem (Aggregation)
+### Direction 1: Submodules → perSystem (Aggregation) {#submodules-to-persystem}
 
 Submodules can declare data that gets aggregated at the perSystem level.
 
@@ -308,7 +315,7 @@ config.treefmt = lib.mkMerge (
 2. `devshell-submodules/nix.nix` sets `config.formatting.treefmt.programs.nixfmt.enable = true`
 3. `modules/formatting.nix` aggregates all `formatting.treefmt` values into the global `treefmt` config
 
-### <a id="persystem-to-submodules"></a>Direction 2: perSystem → Submodules (Dependencies)
+### Direction 2: perSystem → Submodules (Dependencies) {#persystem-to-submodules}
 
 Submodules can access perSystem config and packages via `specialArgs`.
 
@@ -343,9 +350,9 @@ specialArgs = {
 }
 ```
 
-## <a id="adding-new-features"></a>Adding New Features
+## Adding New Features {#adding-new-features}
 
-### <a id="adding-persystem-option"></a>Adding a perSystem Option
+### Adding a perSystem Option {#adding-persystem-option}
 
 Create a new file in `modules/` using the nested function pattern:
 
@@ -383,7 +390,7 @@ Create a new file in `modules/` using the nested function pattern:
 }
 ```
 
-### <a id="adding-devshell-submodule"></a>Adding a Devshell Submodule
+### Adding a Devshell Submodule {#adding-devshell-submodule}
 
 Create a new file in `devshell-submodules/` (standard module syntax, no nesting needed):
 
@@ -410,7 +417,7 @@ Create a new file in `devshell-submodules/` (standard module syntax, no nesting 
 }
 ```
 
-### <a id="adding-submodule-options-from-persystem"></a>Adding Submodule Options from perSystem
+### Adding Submodule Options from perSystem {#adding-submodule-options-from-persystem}
 
 When perSystem needs data from submodules:
 
@@ -440,7 +447,7 @@ When perSystem needs data from submodules:
 }
 ```
 
-## <a id="key-files-reference"></a>Key Files Reference
+## Key Files Reference {#key-files-reference}
 
 | File                           | Purpose                                    |
 | ------------------------------ | ------------------------------------------ |

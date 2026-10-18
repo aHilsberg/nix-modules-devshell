@@ -1,19 +1,28 @@
-## 🎨 Formatting <a id="formatting"></a>
+---
+role:
+  - developers
+  - maintainers
+type: how_to
+topic:
+  - formatting
+last-substantial-update: "2026-10-18"
+---
 
-### Table of Contents
+## Formatting {#formatting}
+
+### Table of Contents {#table-of-contents}
 
 - [Why treefmt?](#why-treefmt)
 - [treefmt-nix Integration](#treefmt-nix-integration)
 - [Configured Formatters](#configured-formatters)
-    - [Python and EditorConfig](#python-and-editorconfig)
-    - [YAML and EditorConfig](#yaml-and-editorconfig)
+- [EditorConfig](#editorconfig)
 - [Developer Guide: Defining Formatters](#developer-guide)
     - [Architecture: One Global treefmt, Multiple Shell Contributions](#architecture-one-global-treefmt-multiple-shell-contributions)
     - [Module Structure](#module-structure)
     - [Two Configuration Methods](#two-configuration-methods)
     - [Best Practices](#best-practices)
 
-### Why treefmt? <a id="why-treefmt"></a>
+### Why treefmt? {#why-treefmt}
 
 In a multi-language, multi-file-type repository, consistent formatting requires multiple CLI tools (language-specific formatters or even multiple formatters for the same file type). Managing these individually creates challenges:
 
@@ -28,7 +37,7 @@ In a multi-language, multi-file-type repository, consistent formatting requires 
 - Providing a single command to format (`treefmt`) and check (`treefmt --fail-on-change`)
 - Supporting Nix integration via `treefmt-nix` for declarative configuration
 
-### treefmt-nix Integration <a id="treefmt-nix-integration"></a>
+### treefmt-nix Integration {#treefmt-nix-integration}
 
 Since we use Nix, `treefmt-nix` enables:
 
@@ -37,76 +46,44 @@ Since we use Nix, `treefmt-nix` enables:
 - Formatter configuration in Nix and splitting across multiple files (by language/concern)
 - Easy use of widely-used pre-configured formatters [See here](https://github.com/numtide/treefmt-nix#supported-programs)
 
-### Configured Formatters <a id="configured-formatters"></a>
+### Configured Formatters {#configured-formatters}
 
-| Language/Format | Formatter             | Configuration File                 |
-| --------------- | --------------------- | ---------------------------------- |
-| **Nix**         | nixfmt (default)      | `devshell-submodules/nix.nix`      |
-| **Nix**         | deadnix (dead code)   | `devshell-submodules/nix.nix`      |
-| **Python**      | ruff check --fix      | `devshell-submodules/python.nix`   |
-| **Python**      | ruff format           | `devshell-submodules/python.nix`   |
-| **C#**          | JetBrains cleanupcode | `devshell-submodules/dotnet.nix`   |
-| **XML/RESX**    | prettier (plugin-xml) | `devshell-submodules/xml.nix`      |
-| **Markdown**    | prettier              | `devshell-submodules/markdown.nix` |
-| **YAML**        | deno fmt              | `devshell-submodules/yaml.nix`     |
-| **JSON**        | prettier              | `devshell-submodules/json.nix`     |
-| **Dockerfile**  | dockerfmt             | `devshell-submodules/docker.nix`   |
+| Module                                    | Formatter                            | EditorConfig handling |
+| ----------------------------------------- | ------------------------------------ | --------------------- |
+| [Nix](modules/Nix.md)                     | nixfmt or Alejandra; deadnix linting | Build-time mapping    |
+| [Python](modules/Python.md)               | Ruff lint fixes and formatting       | Build-time mapping    |
+| [.NET](modules/Dotnet.md)                 | JetBrains ReSharper `cleanupcode`    | Native, per file      |
+| [XML/RESX](modules/Xml.md)                | Prettier with the XML plugin         | Native, per file      |
+| [Markdown](modules/Markdown.md)           | Prettier                             | Native, per file      |
+| [YAML](modules/Yaml.md)                   | `deno fmt`                           | Build-time mapping    |
+| [JSON/JSONC](modules/Json.md)             | Prettier                             | Native, per file      |
+| [Dockerfile](modules/Docker.md)           | dockerfmt                            | Native, per file      |
 
-#### Python and EditorConfig <a id="python-and-editorconfig"></a>
+### EditorConfig {#editorconfig}
 
-Enabling `devshells.<name>.python.enable` automatically registers treefmt programs
-`ruff-check` and `ruff-format` for `*.py` and `*.pyi`. `ruff-check` runs
-`ruff check --fix` at priority **1**, followed by `ruff-format` running
-`ruff format` at priority **2**.
+Every language-stack formatter honors at least part of the project's `.editorconfig`. **Common EditorConfig settings** that are supported by most formatters are:
+- `indent_style`
+- `indent_size`
+- `tab_width`
+- `max_line_length`
 
-Both programs use a shared Ruff wrapper that reads the project's `.editorconfig`
-with `editorconfig-core-c`.
-Settings are resolved against the representative root-level path `self + "/python.py"`;
+>3Support for other standard settings, such as `end_of_line` and `insert_final_newline`, and for
+formatter-specific settings is documented on each module page. "Supports EditorConfig" does not imply support
+for every EditorConfig property.
 
-| EditorConfig setting                                  | Ruff override                              |
-| ----------------------------------------------------- | ------------------------------------------ |
-| `indent_style = space` or `tab`                       | `format.indent-style = "space"` or `"tab"` |
-| Numeric `indent_size` in Ruff's range 1–255           | `indent-width`                             |
-| `indent_size = tab` with numeric `tab_width` in 1–255 | `indent-width` from `tab_width`            |
-| Numeric `max_line_length` in Ruff's range 1–320       | `line-length`                              |
-| `end_of_line = lf` or `crlf`                          | `format.line-ending = "lf"` or `"crlf"`    |
+Formatters with *native support* resolve EditorConfig against each actual input path when they run. Consequently,
+nested `.editorconfig` files and path-specific sections can apply, and editor config edits are visible on the next formatter run.
 
-> [!note] This is **not full EditorConfig support**: for example there are no Ruff equivalents for
-> `charset`, `trim_trailing_whitespace`, `insert_final_newline = false`,
-> | `end_of_line = lf` or `crlf` | `format.line-ending = "lf"` or `"cr-lf"` |
+Some formatters instead translate EditorConfig values into formatter options during Nix evaluation/build - as a workaround for tools without native support: each build queries the root
+`.editorconfig` using one representative root-level filename (with the relevant extension, for example `.py` when wanting to get editorconfig values for python formatter). The resulting config values are
+shared by all files of that type; it is not resolved separately for each real path. Nested EditorConfig files and
+more specific path rules therefore do not apply. After changing `.editorconfig`, reevaluate/rebuild the formatter for it to pick up changes.
 
-The wrapper passes individual `--config key=value` overrides, preserving Ruff's
-discovered project configuration and rules except that the mapped settings take
-precedence.
+### Developer Guide: Defining Formatters {#developer-guide}
 
-#### YAML and EditorConfig <a id="yaml-and-editorconfig"></a>
+Formatters are defined in the `devshell-submodules/` directory using the NixOS module system.
 
-Enabling `devshells.<name>.yaml.enable` registers Deno formatting for both `*.yaml`
-and `*.yml`. Like the Python and Nix integrations, EditorConfig is resolved during
-Nix evaluation using `editorconfig-core-c` (import from derivation), not when the
-formatter runs. YAML uses the representative root-level path `self + "/any.yaml"`
-and generates one immutable Deno configuration for all YAML files.
-
-Only the source snapshot's root `.editorconfig` is checked for existence. Rules
-matching `any.yaml` determine the settings for **both extensions**; `.yml`-specific
-rules and nested `.editorconfig` files do not provide per-file overrides. Use
-`root = true` in the root configuration to stop EditorConfig ancestor lookup.
-Working-tree configuration edits require reevaluating/rebuilding the formatter;
-an existing formatter executable keeps its generated settings.
-
-The mapping retains `indent_style` to `useTabs`, `indent_size` to `indentWidth`
-(using `tab_width` when `indent_size = tab`), and `max_line_length` to `lineWidth`.
-Only `space`/`tab` indentation styles and positive integer widths are emitted.
-Missing, empty, `unset`, `off`, or invalid values are omitted, leaving Deno to use
-its own defaults rather than supplying fallback values or JSON `null`. Other
-EditorConfig properties are not mapped. The generated config is passed explicitly
-with `--config`; it is not merged with a discovered project Deno configuration.
-
-### Developer Guide: Defining Formatters <a id="developer-guide"></a>
-
-Formatters are defined in the `devshell-submodules/` directory using the NixOS module system. Each language/format has its own module that encapsulates formatter configuration.
-
-#### Architecture: One Global treefmt, Multiple Shell Contributions <a id="architecture-one-global-treefmt-multiple-shell-contributions"></a>
+#### Architecture: One Global treefmt, Multiple Shell Contributions {#architecture-one-global-treefmt-multiple-shell-contributions}
 
 **Key Concept**: There is **ONE** global `treefmt` configuration for the entire project, assembled from contributions from all devshells.
 
@@ -163,7 +140,7 @@ excludes = lib.mkOption {
 };
 ```
 
-#### Module Structure <a id="module-structure"></a>
+#### Module Structure {#module-structure}
 
 Module that enable/include formatter config follows this pattern:
 
@@ -188,7 +165,7 @@ Module that enable/include formatter config follows this pattern:
 }
 ```
 
-#### Two Configuration Methods <a id="two-configuration-methods"></a>
+#### Two Configuration Methods {#two-configuration-methods}
 
 **Method 1: Using Built-in treefmt-nix Programs** (Recommended)
 
@@ -229,10 +206,10 @@ formatting.treefmt = {
 };
 ```
 
-#### Best Practices <a id="best-practices"></a>
+#### Best Practices {#best-practices}
 
 - **Use built-in programs when available**: Check [treefmt-nix supported programs](https://github.com/numtide/treefmt-nix#supported-programs) first
-- **Respect `.editorconfig`**: Set `editorconfig = true` when the formatter supports it
+- **Respect `.editorconfig`**: Prefer native support; otherwise map supported settings explicitly and document when they are evaluated
 - **Use priorities wisely**: Order formatters to avoid conflicts (e.g., remove dead code before formatting)
 - **Provide sensible defaults**: Make formatters work out-of-the-box with minimal configuration
 - **Document options**: Use clear descriptions for any configurable options

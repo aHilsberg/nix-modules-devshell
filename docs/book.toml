@@ -1,0 +1,14 @@
+[book]
+title = "nix-modules-devshell"
+language = "en"
+src = "."
+
+[build]
+build-dir = "../.data/documentation"
+create-missing = false
+
+[preprocessor.yml-header]
+
+[output.html]
+site-url = "/"
+admonitions = true
