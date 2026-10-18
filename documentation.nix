@@ -79,64 +79,67 @@
             options = (evalWith {modules = [self.flakeModule];}).options;
             documentType = "none";
             warningsAreErrors = true;
-            transformOptions = opt: let
-                sourcePath = toString self.outPath;
-                declarations =
-                    opt.declarations
-                    |> lib.concatMap (decl:
-                        lib.optional (lib.hasPrefix sourcePath (toString decl)) {
-                            url = "../source" + lib.removePrefix sourcePath (toString decl);
-                            name = "nix-modules-devshell" + lib.removePrefix sourcePath (toString decl);
-                        });
-            in
-                if declarations == [] || builtins.hasAttr (lib.showOption opt.loc) coreOptionsDoc.optionsNix
+            transformOptions = opt:
+                if builtins.hasAttr (lib.showOption opt.loc) coreOptionsDoc.optionsNix
                 then opt // {visible = false;}
-                else opt // {inherit declarations;};
+                else opt;
         };
         optionsCommonMark = optionsDoc.optionsCommonMark.overrideAttrs {
             extraArgs = ["--anchor-prefix" "opt-" "--anchor-style" "legacy"];
         };
-    in {
-        packages.generated-docs-json = optionsDoc.optionsJSON;
-        packages.generated-docs-md = optionsCommonMark;
-        packages.docsMdBook = pkgs.runCommand "nix-modules-devshell-documentation" {
-            nativeBuildInputs = [pkgs.mdbook];
-        } ''
-            mkdir -p src/options src/source
-            cp -r ${./docs}/. src/
-            sed 's|(\./docs/|(|g' ${./README.md} > src/README.md
-            cat ${optionsCommonMark} >> src/options/nix-modules-devshell.md
-            cp ${./flake-module.nix} src/source/flake-module.nix
-            cp -r ${./modules} ${./devshell-submodules} src/source/
-            cat > book.toml <<'EOF'
-            [book]
-            title = "nix-modules-devshell"
-            language = "en"
-            src = "src"
-            [output.html]
-            site-url = "/"
-            EOF
-            cat > src/SUMMARY.md <<'EOF'
-            # Summary
+        optionsMarkdown = pkgs.runCommand "nix-modules-devshell-options.md" {} ''
+            cat > "$out" <<'EOF'
+            ---
+            role:
+              - developers
+              - maintainers
+            topic:
+              - nix-options
+            last-substantial-update: null
+            type: reference
+            ---
 
-            - [Overview](README.md)
-            - [Installation](installation.md)
-            - [Getting started](getting-started.md)
-            - [Developer guide](developer-guide.md)
-            - [Formatting](formatting.md)
-            - [Option reference](options/nix-modules-devshell.md)
             EOF
-            mdbook build --dest-dir "$out"
+            cat ${optionsCommonMark} >> "$out"
         '';
+    in {
+        packages.generated-option-docs-json = optionsDoc.optionsJSON;
+        packages.generated-option-docs-md = optionsMarkdown;
+        packages.documentation = pkgs.runCommand "nix-modules-devshell-documentation" {
+            nativeBuildInputs = [
+                pkgs.mdbook
+                pkgs.mdbook-yml-header
+            ];
+        } ''
+            cp -r ${./docs} docs
+            chmod -R u+w docs
+            mkdir -p docs/options docs/source
+            sed 's|(\./docs/|(|g' ${./README.md} > docs/README.md
+            cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
+            cp ${./flake-module.nix} docs/source/flake-module.nix
+            cp -r ${./modules} ${./devshell-submodules} docs/source/
+            mdbook build docs --dest-dir "$out"
+        '';
+        packages.docsMdBook = config.packages.documentation;
 
-        apps.documentation = {
-            type = "app";
-            meta.description = "Preview private documentation on localhost:8000";
-            program = "${pkgs.writeShellScript "preview-documentation" ''
-                echo "Documentation: http://127.0.0.1:8000"
-                exec ${pkgs.python3}/bin/python3 -m http.server 8000 \
-                    --bind 127.0.0.1 --directory ${config.packages.docsMdBook}
-            ''}";
-        };
+        devshells.default.commands = [
+            {
+                name = "docs";
+                category = "documentation";
+                help = "Serve the documentation with live reload on localhost:8000";
+                command = ''
+                    set -euo pipefail
+
+                    mkdir -p docs/options docs/source
+                    sed 's|(\./docs/|(|g' README.md > docs/README.md
+                    cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
+                    cp flake-module.nix docs/source/flake-module.nix
+                    cp -r modules devshell-submodules docs/source/
+                    export PATH="${lib.makeBinPath [pkgs.mdbook-yml-header]}:$PATH"
+                    exec ${lib.getExe pkgs.mdbook} serve docs \
+                        --hostname 127.0.0.1 --port "''${DOCS_PORT:-8000}" "$@"
+                '';
+            }
+        ];
     };
 }
