@@ -4,8 +4,13 @@
     perSysCfg,
     ...
 }: {
-    packages = lib.mkIf perSysCfg.git-hooks.enable [
-        customPkgs.run-git-hooks
+    commands = lib.mkIf perSysCfg.git-hooks.enable [
+        {
+            name = "run-git-hooks";
+            package = customPkgs.run-git-hooks;
+            category = "development";
+            help = "Run the configured Git hooks.";
+        }
     ];
 
     startup = lib.mkIf perSysCfg.git-hooks.enable {
