@@ -41,8 +41,8 @@
                 }
             );
         };
-        
-        modules.devshell.globalStartup = { perSysCfg, ... }: { ... }: {
-            startup = perSysCfg.startup;
-        };
+
+    modules.devshell.globalStartup = { perSysCfg, ... }: { ... }: {
+        startup = perSysCfg.startup;
+    };
 }

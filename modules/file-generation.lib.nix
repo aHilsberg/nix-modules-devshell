@@ -9,7 +9,7 @@
             packages.generate-nix-managed-files = config.files.writer.drv;
         };
     };
-    
+
     modules.devshell.fileGeneration = { perSysCfg, ... }: { lib, ... }: {
 
         startup = {

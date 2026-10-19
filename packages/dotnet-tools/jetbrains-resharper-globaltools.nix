@@ -1,5 +1,5 @@
-{lib, ...}: {
-    perSystem = {pkgs, ...}: {
+{ lib, ... }: {
+    perSystem = { pkgs, ... }: {
         packages.jetbrains-globaltools = pkgs.buildDotnetGlobalTool {
             pname = "jb";
             version = "2025.3.3";

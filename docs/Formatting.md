@@ -1,10 +1,10 @@
 ---
 role:
-  - developers
-  - maintainers
+    - developers
+    - maintainers
 type: how_to
 topic:
-  - formatting
+    - formatting
 last-substantial-update: "2026-10-18"
 ---
 
@@ -48,30 +48,31 @@ Since we use Nix, `treefmt-nix` enables:
 
 ### Configured Formatters {#configured-formatters}
 
-| Module                                    | Formatter                            | EditorConfig handling |
-| ----------------------------------------- | ------------------------------------ | --------------------- |
-| [Nix](modules/Nix.md)                     | nixfmt or Alejandra; deadnix linting | Build-time mapping    |
-| [Python](modules/Python.md)               | Ruff lint fixes and formatting       | Build-time mapping    |
-| [.NET](modules/Dotnet.md)                 | JetBrains ReSharper `cleanupcode`    | Native, per file      |
-| [XML/RESX](modules/Xml.md)                | Prettier with the XML plugin         | Native, per file      |
-| [Markdown](modules/Markdown.md)           | Prettier                             | Native, per file      |
-| [YAML](modules/Yaml.md)                   | `deno fmt`                           | Build-time mapping    |
-| [JSON/JSONC](modules/Json.md)             | Prettier                             | Native, per file      |
-| [Dockerfile](modules/Docker.md)           | dockerfmt                            | Native, per file      |
+| Module                          | Formatter                            | EditorConfig handling |
+| ------------------------------- | ------------------------------------ | --------------------- |
+| [Nix](modules/Nix.md)           | nixfmt or Alejandra; deadnix linting | Build-time mapping    |
+| [Python](modules/Python.md)     | Ruff lint fixes and formatting       | Build-time mapping    |
+| [.NET](modules/Dotnet.md)       | JetBrains ReSharper `cleanupcode`    | Native, per file      |
+| [XML/RESX](modules/Xml.md)      | Prettier with the XML plugin         | Native, per file      |
+| [Markdown](modules/Markdown.md) | Prettier                             | Native, per file      |
+| [YAML](modules/Yaml.md)         | `deno fmt`                           | Build-time mapping    |
+| [JSON/JSONC](modules/Json.md)   | Prettier                             | Native, per file      |
+| [Dockerfile](modules/Docker.md) | dockerfmt                            | Native, per file      |
 
 ### EditorConfig {#editorconfig}
 
 Every language-stack formatter honors at least part of the project's `.editorconfig`. **Common EditorConfig settings** that are supported by most formatters are:
+
 - `indent_style`
 - `indent_size`
 - `tab_width`
 - `max_line_length`
 
->3Support for other standard settings, such as `end_of_line` and `insert_final_newline`, and for
-formatter-specific settings is documented on each module page. "Supports EditorConfig" does not imply support
-for every EditorConfig property.
+> 3Support for other standard settings, such as `end_of_line` and `insert_final_newline`, and for
+> formatter-specific settings is documented on each module page. "Supports EditorConfig" does not imply support
+> for every EditorConfig property.
 
-Formatters with *native support* resolve EditorConfig against each actual input path when they run. Consequently,
+Formatters with _native support_ resolve EditorConfig against each actual input path when they run. Consequently,
 nested `.editorconfig` files and path-specific sections can apply, and editor config edits are visible on the next formatter run.
 
 Some formatters instead translate EditorConfig values into formatter options during Nix evaluation/build - as a workaround for tools without native support: each build queries the root
@@ -81,7 +82,9 @@ more specific path rules therefore do not apply. After changing `.editorconfig`,
 
 ### Developer Guide: Defining Formatters {#developer-guide}
 
-Formatters are defined in the `devshell-submodules/` directory using the NixOS module system.
+Language-specific formatter contributions live in `devshell-submodules/*.lib.nix`. Each library fragment exports a constructor under `projectLib.modules.devshell.<name>`; applying the shell context returns an ordinary NixOS-style module. Every constructor accepts this context stage, even when it does not use it. Both module registries are applied automatically; adding a formatter does not require editing a central module list.
+
+The shared integration lives in `modules/formatting.lib.nix`, which exports **both** `projectLib.modules.flake.formatting` and `projectLib.modules.devshell.formatting`. See the [Developer Guide](contributer-references/Developer_Guide.md#module-pattern) for the library-fragment and context conventions.
 
 #### Architecture: One Global treefmt, Multiple Shell Contributions {#architecture-one-global-treefmt-multiple-shell-contributions}
 
@@ -102,11 +105,14 @@ treefmt = lib.mkMerge (
 );
 ```
 
+The aggregation above runs in the consumer's `perSystem` scope inside `modules.flake.formatting`, when `formatting.enable` is enabled. That constructor imports `localInputs.treefmt-nix.flakeModule` itself; the root module does not maintain feature-specific dependencies.
+
 **How it works**:
 
-1. **Shell-specific configuration**: Each devshell (e.g., backend, frontend, docs) can enable formatters based on the languages/tools it needs
-2. **Configuration merging**: All `formatting.treefmt` configurations from all shells are merged into one global treefmt configuration
-3. **Project-wide formatting**: When you run `treefmt` or `nix fmt`, it formats **all files in the project** that match enabled formatters, regardless of which shell enabled them
+1. **Shell schema**: `modules.devshell.formatting` derives `formatting.treefmt` from `perSysOptions.treefmt.type.getSubOptions []`, where `perSysOptions` is the consumer's `perSystem` option tree. It retains the existing filtered, visible/writable settings and program options, excluding `_module` and `global` from settings. This is a normal shell module declaration, not option injection from `perSystem`.
+2. **Shell-specific configuration**: Each devshell (e.g., backend, frontend, docs) can enable formatters based on the languages/tools it needs
+3. **Configuration merging**: `modules.flake.formatting` merges all `formatting.treefmt` values from the consumer's `config.devshells` into one global treefmt configuration
+4. **Project-wide formatting**: When you run `treefmt` or `nix fmt`, it formats **all files in the project** that match enabled formatters, regardless of which shell enabled them
 
 **Example scenario**:
 
@@ -120,7 +126,7 @@ treefmt = lib.mkMerge (
 - You cannot scope formatters to specific subdirectories via shell configuration
 - If a formatter is enabled in any shell, it will format all matching files project-wide
 - Use `excludes` patterns (at global or formatter level) to skip specific paths
-- Global excludes are defined in `modules/formatting.nix` and apply to all formatters
+- Global excludes are defined in `modules/formatting.lib.nix` and apply to all formatters
 
 ```nix
 excludes = lib.mkOption {
@@ -142,28 +148,27 @@ excludes = lib.mkOption {
 
 #### Module Structure {#module-structure}
 
-Module that enable/include formatter config follows this pattern:
+A formatter contribution follows this pattern (using Markdown as an example):
 
 ```nix
-{
-    lib,
-    config,
-    pkgs,
-    ...
-}: {
-    options.<language>.enable = lib.mkEnableOption "<description> for this shell";
+# devshell-submodules/markdown.lib.nix
+{...}: {
+    modules.devshell.markdown = {...}: {lib, config, ...}: {
+        options.markdown.enable = lib.mkEnableOption "Markdown formatting for this shell";
 
-    config = lib.mkIf config.<language>.enable {
-        # Package dependencies
-        packages = [ /* formatter packages */ ];
-
-        # Formatter configuration
-        formatting.treefmt = {
-            # treefmt-nix configuration here
+        config = lib.mkIf config.markdown.enable {
+            formatting.treefmt.programs.prettier = {
+                enable = true;
+                includes = ["*.md" "*.markdown"];
+            };
         };
     };
 }
 ```
+
+The first function is the library fragment; the function assigned to `modules.devshell.markdown` accepts the shell context; the last function receives the actual shell module arguments. Request `config`, `lib`, `name`, `options`, and `pkgs` from those module arguments, not from the context. Shared `pkgs` and `system` are supplied through the shell's `submoduleWith.specialArgs`.
+
+For provider tools, capture `customPkgs` in the constructor's context stage, for example `modules.devshell.dotnet = {customPkgs, ...}: {lib, config, pkgs, ...}: { ... };`. This package set comes from the provider's `withSystem system ({config, ...}: config.packages)`, populated by its `packages/` and `modules/` modules. It is distinct from the consumer's `pkgs` and `perSysCfg.packages`.
 
 #### Two Configuration Methods {#two-configuration-methods}
 

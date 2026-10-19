@@ -1,5 +1,5 @@
-{lib, ...}: {
-    perSystem = {pkgs, ...}: {
+{ lib, ... }: {
+    perSystem = { pkgs, ... }: {
         packages.prettier-plugin-xml = pkgs.stdenv.mkDerivation rec {
             pname = "prettier-plugin-xml";
             version = "3.4.2";
@@ -45,7 +45,7 @@
                 changelog = "https://github.com/prettier/plugin-xml/releases/tag/v${version}";
                 license = licenses.mit;
                 platforms = platforms.all;
-                maintainers = [];
+                maintainers = [ ];
                 # No mainProgram - this is a Prettier plugin library, not a CLI tool
             };
         };

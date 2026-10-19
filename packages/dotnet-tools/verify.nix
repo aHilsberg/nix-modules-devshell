@@ -1,5 +1,5 @@
-{lib, ...}: {
-    perSystem = {pkgs, ...}: {
+{ lib, ... }: {
+    perSystem = { pkgs, ... }: {
         packages.verify-terminal = pkgs.buildDotnetModule rec {
             pname = "dotnet-verify";
             version = "0.7.0";
@@ -23,7 +23,7 @@
             dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;
             dotnet-runtime = pkgs.dotnetCorePackages.runtime_10_0;
 
-            executables = ["Verify.Terminal"];
+            executables = [ "Verify.Terminal" ];
 
             dotnetBuildFlags = [
                 "-p:MinVerSkip=true"

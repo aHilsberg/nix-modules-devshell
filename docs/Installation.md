@@ -1,9 +1,9 @@
 ---
 role:
-  - developers
+    - developers
 topic:
-  - installation
-  - direnv
+    - installation
+    - direnv
 type: how_to
 last-substantial-update: "2026-04-16"
 ---
@@ -118,7 +118,6 @@ curl -fsSL https://install.determinate.systems/nix | sh -s -- install
 #### Alternative: Official Nix Installer {#alternative-official-nix-installer}
 
 Follow the [official Nix installation guide](https://nixos.org/download.html) for your platform
-
 
 #### Enabling Flakes {#enabling-flakes}
 

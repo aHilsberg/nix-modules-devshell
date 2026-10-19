@@ -1,5 +1,5 @@
-{lib, ...}: {
-    perSystem = {pkgs, ...}: {
+{ lib, ... }: {
+    perSystem = { pkgs, ... }: {
         packages.report-generator = pkgs.buildDotnetModule rec {
             pname = "dotnet-report-generator";
             version = "5.5.4";
@@ -25,7 +25,7 @@
             dotnet-sdk = pkgs.dotnetCorePackages.sdk_10_0;
             dotnet-runtime = pkgs.dotnetCorePackages.runtime_10_0;
 
-            executables = ["ReportGenerator"];
+            executables = [ "ReportGenerator" ];
 
             dotnetBuildFlags = [
                 "-p:Version=${version}"

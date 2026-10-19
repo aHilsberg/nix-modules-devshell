@@ -1,5 +1,5 @@
-{lib, ...}: {
-    perSystem = {pkgs, ...}: {
+{ lib, ... }: {
+    perSystem = { pkgs, ... }: {
         packages.dotnet-outdated = pkgs.buildDotnetModule rec {
             pname = "dotnet-outdated-tool";
             version = "4.7.1";
@@ -18,9 +18,9 @@
             dotnet-sdk = pkgs.dotnetCorePackages.sdk_9_0;
             dotnet-runtime = pkgs.dotnetCorePackages.runtime_9_0;
 
-            dotnetRestoreFlags = ["-p:TargetFramework=net9.0"];
+            dotnetRestoreFlags = [ "-p:TargetFramework=net9.0" ];
 
-            executables = ["dotnet-outdated"];
+            executables = [ "dotnet-outdated" ];
 
             dotnetBuildFlags = [
                 "-f"

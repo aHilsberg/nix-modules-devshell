@@ -1,9 +1,9 @@
 ---
 role:
-  - developers
+    - developers
 topic:
-  - xml
-  - formatting
+    - xml
+    - formatting
 type: reference
 last-substantial-update: "2026-10-18"
 ---

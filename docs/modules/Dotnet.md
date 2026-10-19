@@ -1,9 +1,9 @@
 ---
 role:
-  - developers
+    - developers
 topic:
-  - dotnet
-  - snapshot-testing
+    - dotnet
+    - snapshot-testing
 type: reference
 last-substantial-update: "2026-10-18"
 ---
@@ -24,10 +24,10 @@ file-specific sections apply without rebuilding or reloading the development she
 
 When `dotnet.enable = true`, the following packages are automatically available:
 
-| Package                  | Command           | Description                               |
-| ------------------------ | ----------------- | ----------------------------------------- |
-| **dotnet-outdated**       | `dotnet-outdated`  | Display and update outdated NuGet packages |
-| **report-generator**     | `reportgenerator` | Generate coverage reports from XML files   |
+| Package                   | Command           | Description                                |
+| ------------------------- | ----------------- | ------------------------------------------ |
+| **dotnet-outdated**       | `dotnet-outdated` | Display and update outdated NuGet packages |
+| **report-generator**      | `reportgenerator` | Generate coverage reports from XML files   |
 | **jetbrains-globaltools** | `jb`              | JetBrains code cleanup and formatting      |
 
 ## Snapshot Testing {#snapshot-testing}
@@ -43,6 +43,6 @@ perSystem = {
 };
 ```
 
-| Package             | Command         | Description                      |
-| ------------------- | --------------- | -------------------------------- |
+| Package             | Command         | Description                       |
+| ------------------- | --------------- | --------------------------------- |
 | **verify-terminal** | `dotnet-verify` | CLI for managing Verify snapshots |

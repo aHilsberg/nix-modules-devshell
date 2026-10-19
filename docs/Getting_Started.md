@@ -1,9 +1,9 @@
 ---
 role:
-  - developers
+    - developers
 topic:
-  - devshell
-  - formatting
+    - devshell
+    - formatting
 type: quick_start
 last-substantial-update: "2026-10-18"
 ---
@@ -56,7 +56,7 @@ nix develop
 
 ## Formatting Code {#formatting-code}
 
-The development environment uses **treefmt** (via `nix fmt`) as a unified wrapper for all formatters. 
+The development environment uses **treefmt** (via `nix fmt`) as a unified wrapper for all formatters.
 
 This gives a unified interface to register filetype specific formaters and run them.
 
@@ -89,16 +89,16 @@ nix fmt -- --check .
 nix fmt -- --quiet
 ```
 
->[!note] The forwarded arguments must be supported by the formatter configured in your flake.
+> [!note] The forwarded arguments must be supported by the formatter configured in your flake.
 
 ## Nix-Managed Files {#nix-managed-files}
 
 Some files in your project may be derived or should be effected by Nix configuration.
 This is useful for:
+
 - `.gitignore` (enabling a language stack in the devshell nix config could also add common build result patterns of that language stack to the gitignore)
 - Configuration files that should stay in sync with Nix definitions
 - Any file that should be derived from your flake configuration
-
 
 > [!note]
 > **Important:** Nix-managed files are read-only. Any manual changes will be overwritten when regenerating and will cause CI to fail.
@@ -106,6 +106,7 @@ This is useful for:
 ### Specifing nix managed files {#specifying-nix-managed-files}
 
 The `files` module (this uses [mightyiam/files](https://github.com/mightyiam/files) under the hood) allows declaring files that should be generated from Nix expressions:
+
 ```nix
 perSystem.files.file = {
   "README.md".text = "# My Project";
@@ -132,20 +133,19 @@ nix flake check
 
 If you see an error about managed files being modified, regenerate them with the command above and commit the changes.
 
-
 ## Available Language Modules {#available-modules}
 
 The devshell supports various language and tool modules that can be enabled:
 
-| Module     | Description                               |
-| ---------- | ----------------------------------------- |
+| Module                          | Description                               |
+| ------------------------------- | ----------------------------------------- |
 | [`dotnet`](./modules/Dotnet.md) | .NET SDK and tooling                      |
-| `json`     | JSON formatting with Prettier             |
-| `markdown` | Markdown formatting with Prettier         |
-| `yaml`     | YAML formatting with Prettier             |
-| `xml`      | XML formatting with Prettier (plugin-xml) |
-| `docker`   | Dockerfile formatting with dockerfmt      |
-| `nix`      | Nix formatting with nixfmt and deadnix |
+| `json`                          | JSON formatting with Prettier             |
+| `markdown`                      | Markdown formatting with Prettier         |
+| `yaml`                          | YAML formatting with Prettier             |
+| `xml`                           | XML formatting with Prettier (plugin-xml) |
+| `docker`                        | Dockerfile formatting with dockerfmt      |
+| `nix`                           | Nix formatting with nixfmt and deadnix    |
 
 ### Enabling Modules {#enabling-modules}
 
@@ -163,7 +163,6 @@ perSystem = {
     };
 };
 ```
-
 
 ## Git Hooks {#git-hooks}
 
@@ -183,8 +182,8 @@ With `git-hooks.enable = true`, entering the devshell runs the upstream installa
 
 ### Available Hooks {#available-hooks}
 
-| Hook | Stage | Description |
-| --- | --- | --- |
+| Hook          | Stage      | Description                                     |
+| ------------- | ---------- | ----------------------------------------------- |
 | `flake-check` | `pre-push` | Enabled by this module; runs `nix flake check`. |
 
 Formatting is checked indirectly by `flake-check` when the treefmt flake check is enabled. There is no separate formatting hook.
@@ -227,19 +226,19 @@ A hook without explicit `stages` inherits `pre-commit.settings.default_stages`, 
 
 The supported git stages are:
 
-| Stage | When Git invokes it |
-| --- | --- |
-| `pre-commit` | Before creating a commit. |
-| `pre-merge-commit` | Before creating a merge commit. |
-| `prepare-commit-msg` | Before editing the commit message. |
-| `commit-msg` | To validate the commit message. |
-| `post-commit` | After creating a commit. |
-| `pre-push` | Before pushing to a remote. |
-| `post-checkout` | After checkout or switch. |
-| `post-merge` | After a merge. |
-| `post-rewrite` | After commands that rewrite commits, such as amend or rebase. |
-| `pre-rebase` | Before a rebase. |
-| `manual` | Never invoked automatically by Git. |
+| Stage                | When Git invokes it                                           |
+| -------------------- | ------------------------------------------------------------- |
+| `pre-commit`         | Before creating a commit.                                     |
+| `pre-merge-commit`   | Before creating a merge commit.                               |
+| `prepare-commit-msg` | Before editing the commit message.                            |
+| `commit-msg`         | To validate the commit message.                               |
+| `post-commit`        | After creating a commit.                                      |
+| `pre-push`           | Before pushing to a remote.                                   |
+| `post-checkout`      | After checkout or switch.                                     |
+| `post-merge`         | After a merge.                                                |
+| `post-rewrite`       | After commands that rewrite commits, such as amend or rebase. |
+| `pre-rebase`         | Before a rebase.                                              |
+| `manual`             | Never invoked automatically by Git.                           |
 
 `manual` is not installed as a Git hook.
 
@@ -265,18 +264,19 @@ perSystem = {
   };
 };
 ```
+
 For each stage it invokes the configured runner with `run --all-files --config <generated-config> --hook-stage <stage>`. This checks all Git-tracked files rather than only staged changes, while still respecting each hook's stage and file filters. It stops at the first failing stage. A hook registered for multiple selected stages can run more than once.
 
 > [!warning]
 > `run-git-hooks` does not forward command-line arguments. `run-git-hooks --hook-stage pre-push` does **not** restrict execution to `pre-push`. Use the direct runner below or change `git-hooks.runStages`.
 
->There are three separate controls:
+> There are three separate controls:
 >
->| Setting | Controls |
->| --- | --- |
->| `pre-commit.settings.hooks.<id>.stages` | Which stages a hook belongs to, and therefore which Git hooks are installed. |
->| `pre-commit.settings.default_stages` | Stages inherited by hooks that omit `stages`. |
->| `git-hooks.runStages` | Which stages `run-git-hooks` invokes, in order; does not change hook registration or installation. |
+> | Setting                                 | Controls                                                                                           |
+> | --------------------------------------- | -------------------------------------------------------------------------------------------------- |
+> | `pre-commit.settings.hooks.<id>.stages` | Which stages a hook belongs to, and therefore which Git hooks are installed.                       |
+> | `pre-commit.settings.default_stages`    | Stages inherited by hooks that omit `stages`.                                                      |
+> | `git-hooks.runStages`                   | Which stages `run-git-hooks` invokes, in order; does not change hook registration or installation. |
 
 ### Skip Hooks {#skip-hooks}
 

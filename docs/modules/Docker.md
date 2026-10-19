@@ -1,9 +1,9 @@
 ---
 role:
-  - developers
+    - developers
 topic:
-  - docker
-  - formatting
+    - docker
+    - formatting
 type: reference
 last-substantial-update: "2026-10-18"
 ---

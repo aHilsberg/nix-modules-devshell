@@ -1,9 +1,9 @@
 ---
 role:
-  - developers
+    - developers
 type: overview
 topic:
-  - devshell
+    - devshell
 last-substantial-update: null
 ---
 
@@ -26,9 +26,9 @@ unify and simplify development shell configuration of consumer projects.
 
 ## Quick Start
 
->See [Installation](./docs/Installation.md) for details, and how to setup automatic entry into a development shell when entering a directory.
+> See [Installation](./docs/Installation.md) for details, and how to setup automatic entry into a development shell when entering a directory.
 >
->See [Quick Start](./docs/Getting_Started.md) for a intro into the capabilities provided by nix-modules-devshell.
+> See [Quick Start](./docs/Getting_Started.md) for a intro into the capabilities provided by nix-modules-devshell.
 
 ### Install
 
@@ -116,16 +116,16 @@ nix run .#generate-nix-managed-files
 
 ## Available Language Stack Modules
 
-| Module     | Contents                                                       |
-| ---------- | ----------------------------------------------------------------- |
+| Module     | Contents                                                                                      |
+| ---------- | --------------------------------------------------------------------------------------------- |
 | `dotnet`   | .NET SDK, dependency versioning util, testing tooling, Formatting with JetBrains code cleanup |
-| `json`     | JSON/JSONC formatting with Prettier                               |
-| `markdown` | Markdown formatting with Prettier                                 |
-| `yaml`     | YAML formatting with deno                                     |
-| `xml`      | XML/RESX formatting with Prettier plugin-xml                      |
-| `docker`   | Dockerfile formatting with dockerfmt                              |
-| `nix`      | Nix formatting (nixfmt) and linting (deadnix)                  |
-| `python`   | Python interpreter environment, Ruff lint fixes and formatting    |
+| `json`     | JSON/JSONC formatting with Prettier                                                           |
+| `markdown` | Markdown formatting with Prettier                                                             |
+| `yaml`     | YAML formatting with deno                                                                     |
+| `xml`      | XML/RESX formatting with Prettier plugin-xml                                                  |
+| `docker`   | Dockerfile formatting with dockerfmt                                                          |
+| `nix`      | Nix formatting (nixfmt) and linting (deadnix)                                                 |
+| `python`   | Python interpreter environment, Ruff lint fixes and formatting                                |
 
 ## References / Projects that have been build upon
 
