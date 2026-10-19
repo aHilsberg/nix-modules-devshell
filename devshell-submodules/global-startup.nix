@@ -1,3 +1,0 @@
-{perSysCfg, ...}: {
-    startup = perSysCfg.startup;
-}

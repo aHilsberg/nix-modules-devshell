@@ -2,39 +2,42 @@
     localInputs,
     projectLib,
     withSystem,
-}: {
+}:
+{
     lib,
     flake-parts-lib,
     self,
     ...
-}: {
-    imports = [
-        (
-            # Wrapper that uses import-tree's .map to import each path and then apply args
-            # All modules are expected to be nested functions: { localInputs, projectLib, ... }: { ... }: { ... }
-            localInputs.import-tree.map (modulePath: (import modulePath) {inherit localInputs projectLib;})
-            ./modules
-        )
-    ];
+}:
+let
+    # type: applyModules :: context -> { _: context -> moduleValue } -> [moduleValue]
+    applyModules = context: registry: map (makeModule: makeModule context) (lib.attrValues registry);
 
-    options.perSystem = flake-parts-lib.mkPerSystemOption ({
-        config,
-        pkgs,
-        system,
-        ...
-    }: {
-        options = {
-            devshell-submodule-extension = lib.mkOption {
-                description = ''
-                    Submodules specified by top level modules, to allow submodule to specify
-                    data used in toplevel modules
-                '';
-                type = lib.types.listOf lib.types.deferredModule;
-                default = [];
-                internal = true;
+    flakeContext = { inherit localInputs projectLib withSystem; };
+in
+{
+    # import all flake level modules registered in the projectLib
+    imports = applyModules flakeContext projectLib.modules.flake;
+
+    options.perSystem = flake-parts-lib.mkPerSystemOption (
+        {
+            config,
+            options,
+            pkgs,
+            system,
+            ...
+        }:
+        let
+            devshellContext = flakeContext // {
+                inherit self;
+                perSysCfg = config;
+                perSysOptions = options;
+                # withSystem belongs to the provider; config above belongs to the consumer.
+                customPkgs = withSystem system ({ config, ... }: config.packages);
             };
-
-            devshells = lib.mkOption {
+        in
+        {
+            options.devshells = lib.mkOption {
                 description = ''
                     Opinionated devshell definitions.
 
@@ -44,29 +47,16 @@
 
                 type = lib.types.lazyAttrsOf (
                     lib.types.submoduleWith {
-                        modules =
-                            [
-                                (localInputs.import-tree ./devshell-submodules)
-                            ]
-                            ++ config.devshell-submodule-extension;
-
-                        specialArgs = {
-                            inherit pkgs system projectLib self;
-                            # make local perSystem config and packages accessible in submodules
-                            # see https://flake.parts/dogfood-a-reusable-module.html
-                            perSysCfg = config;
-                            customPkgs = withSystem system (
-                                {config, ...}: config.packages
-                            );
-                        };
+                        # import all devshell level modules registered in the projectLib
+                        modules = applyModules devshellContext projectLib.modules.devshell;
+                        specialArgs = { inherit pkgs system; };
                     }
                 );
 
-                default = {};
+                default = { };
             };
-        };
 
-        config.devShells =
-            lib.mapAttrs (_name: shellCfg: shellCfg.build.shell) config.devshells;
-    });
+            config.devShells = lib.mapAttrs (_name: shellCfg: shellCfg.build.shell) config.devshells;
+        }
+    );
 }

@@ -24,40 +24,52 @@
         };
     };
 
-    outputs = inputs @ {flake-parts, ...}:
-        flake-parts.lib.mkFlake {inherit inputs;} (
+    outputs =
+        inputs@{
+            flake-parts,
+            nixpkgs,
+            self,
+            ...
+        }:
+        flake-parts.lib.mkFlake { inherit inputs; } (
             {
                 flake-parts-lib,
                 config,
-                projectLib,
                 withSystem,
                 ...
-            }: let
+            }:
+            let
+                projectLib = import ./lib.nix {
+                    inherit inputs self;
+                    inherit (nixpkgs) lib;
+                };
                 inherit (flake-parts-lib) importApply;
                 devshellFlakeModule = importApply ./flake-module.nix {
                     localInputs = inputs;
                     inherit projectLib withSystem;
                 };
-            in {
+            in
+            {
                 imports = [
                     inputs.flake-parts.flakeModules.modules
                     inputs.testing.flakeModule
-                    ./lib.nix
                     ./pkgs.nix
 
                     ./documentation.nix
                     (inputs.import-tree ./packages)
-                    (inputs.import-tree.filterNot
-                    (path:
+                    (inputs.import-tree.filterNot (
+                        path:
                         inputs.nixpkgs.lib.hasSuffix ".lib.nix" path
                         || inputs.nixpkgs.lib.hasSuffix ".no-auto-import.nix" path
                         || inputs.nixpkgs.lib.hasInfix "/fixtures/" path
                         || inputs.nixpkgs.lib.hasInfix "/data/" path
-                        || inputs.nixpkgs.lib.hasInfix "/snapshots/" path)
-                    ./tests)
+                        || inputs.nixpkgs.lib.hasInfix "/snapshots/" path
+                    ) ./tests)
 
                     devshellFlakeModule
                 ];
+
+                _module.args.projectLib = projectLib;
 
                 systems = [
                     "x86_64-linux"
@@ -68,15 +80,14 @@
                 flake.overlays = {
                     default = inputs.devshell.overlays.default;
                     nushell = _: prev: {
-                        nushell =
-                            inputs.testing.inputs.nixpkgs.legacyPackages.${prev.stdenv.hostPlatform.system}.nushell;
+                        nushell = inputs.testing.inputs.nixpkgs.legacyPackages.${prev.stdenv.hostPlatform.system}.nushell;
                     };
                 };
 
                 flake.flakeModule = config.flake.flakeModules.default;
                 flake.flakeModules.default = devshellFlakeModule;
 
-                perSystem = {pkgs, ...}: {
+                perSystem = { pkgs, ... }: {
                     formatting = {
                         enable = true;
                         excludes = [
@@ -85,21 +96,21 @@
                             "tests/snapshots/**"
                         ];
                     };
-                    
+
                     gitignore = {
                         enable = true;
                         entries = [
                             ".data/"
                         ];
                     };
-                    
+
                     git-hooks.enable = true;
                     pre-commit.settings.hooks.tests = {
                         enable = true;
                         entry = "${pkgs.nix}/bin/nix --extra-experimental-features 'nix-command flakes pipe-operators' run .#tests -- run";
                         pass_filenames = false;
                         always_run = true;
-                        stages = ["pre-push"];
+                        stages = [ "pre-push" ];
                     };
 
                     devshells.default = {
