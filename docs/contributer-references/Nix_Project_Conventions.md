@@ -11,6 +11,17 @@ last-substantial-update: "2026-10-18"
 
 `nix-modules-devshell` follows the generic convention below for the project library and package set.
 
+```text
+nix-modules-devshell/
+├── flake.nix                  # Wires projectLib, overlays, imports, and exports
+├── lib.nix                    # Builds projectLib, including mkPkgs
+├── pkgs.nix                   # Supplies the provider's perSystem.pkgs
+├── modules/
+│   ├── *.lib.nix              # Feature constructors and library exports
+└── tests/
+    └── test.lib.nix           # Shared test library fragment
+```
+
 ## Generic convention
 
 ### Project library (`lib.nix`)

@@ -137,7 +137,7 @@
                         sed 's|(\./docs/|(|g' ${./README.md} > docs/README.md
                         cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
                         cp ${./flake-module.nix} docs/source/flake-module.nix
-                        cp -r ${./modules} ${./devshell-submodules} docs/source/
+                        cp -r ${./modules} docs/source/
                         mdbook build docs --dest-dir "$out"
                     '';
             packages.docsMdBook = config.packages.documentation;
@@ -154,7 +154,7 @@
                         sed 's|(\./docs/|(|g' README.md > docs/README.md
                         cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
                         cp flake-module.nix docs/source/flake-module.nix
-                        cp -r modules devshell-submodules docs/source/
+                        cp -r modules docs/source/
                         export PATH="${lib.makeBinPath [ pkgs.mdbook-yml-header ]}:$PATH"
                         exec ${lib.getExe pkgs.mdbook} serve docs \
                             --hostname 127.0.0.1 --port "''${DOCS_PORT:-8001}" "$@"

@@ -1,125 +1,172 @@
 ---
 role:
-  - maintainers
+    - maintainers
 type: overview
 topic:
-  - module-system
-last-substantial-update: "2026-10-15"
+    - module-system
+last-substantial-update: "2026-10-19"
 ---
 
 # Developer Guide {#developer-guide}
 
-This guide explains the internal architecture of `nix-modules-devshell` for developers who want to understand, contribute to, or extend the codebase.
+This guide explains the internal architecture of `nix-modules-devshell` for developers who want to understand, contribute to, or extend the codebase. File paths are relative to the `nix-modules-devshell` repository.
 
 ## Table of Contents {#table-of-contents}
 
 - [Overview](#overview)
+- [Repository File Tree](#repository-file-tree)
 - [Entry Points](#entry-points)
-    - [flake.nix](#flake-nix)
-    - [flake-module.nix](#flake-module-nix)
+    - [`flake.nix`](#flake-nix)
+    - [`lib.nix`](#lib-nix)
+    - [`flake-module.nix`](#flake-module-nix)
 - [Module Argument Injection](#module-argument-injection)
     - [The Problem](#the-problem)
-    - [The Solution: importTreeApply](#the-solution-importtreeapply)
+    - [The Solution: Registry Constructors](#the-solution-importtreeapply)
     - [Module Pattern](#module-pattern)
-- [Module System](#module-system)
-    - [perSystem Modules](#persystem-modules)
-    - [Devshell Submodules](#devshell-submodules)
+    - [Aspect-oriented File Layout](#feature-file-layout)
 - [Communication Between Scopes](#communication-between-scopes)
-    - [Submodules → perSystem (Aggregation)](#submodules-to-persystem)
-    - [perSystem → Submodules (Dependencies)](#persystem-to-submodules)
+    - [Direction 1: Submodules → perSystem (Aggregation)](#submodules-to-persystem)
+    - [Direction 2: perSystem → Submodules (Dependencies)](#persystem-to-submodules)
 - [Adding New Features](#adding-new-features)
     - [Adding a perSystem Option](#adding-persystem-option)
     - [Adding a Devshell Submodule](#adding-devshell-submodule)
-    - [Adding Submodule Options from perSystem](#adding-submodule-options-from-persystem)
-- [Key Files Reference](#key-files-reference)
+    - [Adding Paired Flake and Devshell Modules](#adding-submodule-options-from-persystem)
 
 ## Overview {#overview}
 
+Consumers import the exported flake-parts module and configure project-wide settings and individual shells:
+
+```nix
+{
+    imports = [inputs.nix-modules-devshell.flakeModule];
+
+    perSystem = {pkgs, ...}: {
+        formatting.enable = true;
+        git-hooks.enable = true;
+
+        devshells.default = {
+            packages = [pkgs.hello];
+            dotnet.enable = true;
+            nix.enable = true;
+        };
+    };
+}
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              Consumer Flake                                 │
-│                                                                             │
-│   imports = [ inputs.nix-modules-devshell.flakeModule ]                     │
-│                                                                             │
-│   perSystem = {                ←── perSystem options (modules/)             │
-│     formatting.enable = true;                                               │
-│     git-hooks.enable = true;                                                │
-│                                                                             │
-│     devshells.default = {      ←── devshell options (devshell-submodules/)  │
-│       dotnet.enable = true;                                                 │
-│       nix.enable = true;                                                    │
-│     };                                                                      │
-│   }                                                                         │
-└─────────────────────────────────────────────────────────────────────────────┘
+
+Internally, composition has three stages:
+
+1. **Build the library**: `projectLib` is constructed following [nix project conventions](./Nix_Project_Conventions.md), which discovers library fragments and merges project wide `*.lib.nix` files that contain module fragements.
+2. **Project local information embedded in exported flakeModule**: the flake root passes via `importApply` this project local input and projectLib to the output module.
+3. **Evaluate ordinary modules**: the output module is a flake-parts module that imports all flake-parts modules and shell submodules present in the `projectLib`.
+
+> A `*.lib.nix` feature file is therefore a **library fragment**, not a module thats directly imported. Its exports are **context → ordinary module** constructors (either a flake level module, or a devshell level module). Feature fragments live under `modules/` and are grouped by concern: a single file can export both a flake module and a devshell module.
+
+## Repository File Tree {#repository-file-tree}
+
+```text
+nix-modules-devshell/
+├── flake.nix                       # Provider inputs/outputs, imports, and dogfooding
+├── flake-module.nix                # Consumer entry point and module-registry composition
+├── lib.nix                         # Library-fragment discovery and merging
+├── pkgs.nix                        # Provider's per-system package set and overlays
+├── documentation.nix               # Option-reference generation and mdBook build/preview
+├── modules/                        # features; flake and shell exports colocated by concern
+│   └── language-ecosystems/        # Per-shell language/tool support
+├── packages/                       # packaged applications, available through customPkgs
+├── docs/                           # mdBook chapters and reference material
+│   ├── contributer-references/     # Architecture and contribution guides
+│   ├── modules/                    # Ecosystem user guides
+│   ├── options/                    # Option reference (generated)
+│   └── source/                     # Nix sources for documentation includes (generated)
+├── README.md                       # Consumer overview and quick start
+├── .editorconfig                   # Editing and formatter policy
+├── .data/                          # Local generated output and runtime data (ignored)
+└── .direnv/                        # Cached development environment (ignored)
 ```
 
 ## Entry Points {#entry-points}
 
 ### `flake.nix` {#flake-nix}
 
-The flake exposes the module for consumers using `importApply` to inject local flake arguments:
+This repository's flake is importing external build upon flakes and exports the flake module for consumers to use.
+It also dogfoods the consumer module.
+
+The flake constructs `projectLib`, then binds the exported root module with `importApply`.
 
 ```nix
-# flake.nix (simplified)
-outputs = inputs @ {...}:
-  flake-parts.lib.mkFlake {inherit inputs;} ({flake-parts-lib, ...}: let
-    inherit (flake-parts-lib) importApply;
-    devshellFlakeModule = importApply ./flake-module.nix {
-      localInputs = inputs;
-      inherit projectLib withSystem;
+# flake.nix: inside mkFlake; inputs, self, and nixpkgs come from outputs
+{config, flake-parts-lib, withSystem, ...}: let
+    projectLib = import ./lib.nix {
+        inherit inputs self;
+        inherit (nixpkgs) lib;
     };
-    projectLib = import ./lib.nix {inherit (nixpkgs) lib;};
-  in {
+    devshellFlakeModule = flake-parts-lib.importApply ./flake-module.nix {
+        localInputs = inputs;
+        inherit projectLib withSystem;
+    };
+in {
+    _module.args.projectLib = projectLib;
+    imports = [devshellFlakeModule];
     flake.flakeModule = config.flake.flakeModules.default;
     flake.flakeModules.default = devshellFlakeModule;
-  });
+}
 ```
 
-This flake also **dogfoods** its own module by importing `devshellFlakeModule` directly, allowing us to test the module system on itself.
+`localInputs`, `projectLib`, and `withSystem` are bound to the local flake - their not overwritten/set to be the consumer information. In contrast, `self` is obtained later from the root module's ordinary arguments, so it is the consumer's flake.
+
+> This distinction matters for repository paths such as `self + "/.editorconfig"`.
+
+### `lib.nix` {#lib-nix}
+
+`lib.nix` is a pure library builder, **not a flake-parts module**. It:
+
+- uses `import-tree` to discover `*.lib.nix` fragments recursively from the repository root
+- discovers feature fragments under `modules/`, including `modules/language-ecosystems/`, and helpers such as `tests/test.lib.nix` through the same scan;
+- uses `lib.fix` to let fragments refer to the completed `projectLib` without constructing the library through module configuration;
+- recursively merges attribute-set branches and rejects duplicate leaves instead of silently overwriting an export.
+
+Each discovered fragment must return a function, which the builder calls with `{inputs, lib, self, projectLib}`. A fragment can contribute ordinary helpers as well as module constructors; `tests/test.lib.nix`, for example, contributes the testing library rather than a feature module.
 
 ### `flake-module.nix` {#flake-module-nix}
 
-The main entry point that consumers import. It:
-
-1. Receives `localInputs` and `projectLib` via the curried function pattern
-2. Imports all modules from `modules/` via `import-tree` with argument injection
-3. Declares the `devshells.<name>` option as a submodule
-4. Passes `specialArgs` to submodules for cross-scope communication
-5. Maps `devshells` to `devShells` outputs
+The consumer-facing root module applies uses the modules registed in the `projectLib`.
 
 ```nix
-# flake-module.nix (simplified)
-{
-  localInputs,
-  projectLib,
-  withSystem,
-}: {
-  lib,
-  flake-parts-lib,
-  ...
-}: {
-  imports = [
-    (localInputs.import-tree.map
-      (modulePath: (import modulePath) {inherit localInputs projectLib;})
-      ./modules)
-  ];
+# flake-module.nix: simplified composition
+{localInputs, projectLib, withSystem}: {lib, flake-parts-lib, self, ...}: let
+    applyModules = context: registry:
+        map (makeModule: makeModule context) (lib.attrValues registry);
 
-  options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
-    options.devshells = lib.mkOption {
-      type = lib.types.lazyAttrsOf (
-        lib.types.submoduleWith {
-          modules = [ (localInputs.import-tree ./devshell-submodules) ]
-                    ++ config.devshell-submodule-extension;
-          specialArgs = {
-            perSysCfg = config;
-            customPkgs = ...;
-          };
+    flakeContext = {inherit localInputs projectLib withSystem;};
+in {
+    # all `flake` level modules are imported as flake-parts modules
+    imports = applyModules flakeContext projectLib.modules.flake;
+
+    options.perSystem = flake-parts-lib.mkPerSystemOption (
+        {config, options, pkgs, system, ...}: let
+            customPkgs = withSystem system ({config, ...}: config.packages);
+            shellContext = flakeContext // {
+                inherit self customPkgs;
+                perSysCfg = config;
+                perSysOptions = options;
+            };
+        in {
+            options.devshells = lib.mkOption {
+                type = lib.types.lazyAttrsOf (
+                    lib.types.submoduleWith {
+                        # all `devshell` level modules are added to the 'per-devshell' module
+                        modules = applyModules shellContext projectLib.modules.devshell;
+                        specialArgs = {inherit pkgs system;};
+                    }
+                );
+                default = {};
+            };
+
+            config.devShells = lib.mapAttrs
+                (_: shellCfg: shellCfg.build.shell)
+                config.devshells;
         }
-      );
-    };
-
-    config.devShells = lib.mapAttrs (_: cfg: cfg.build.shell) config.devshells;
-  });
+    );
 }
 ```
 
@@ -127,335 +174,225 @@ The main entry point that consumers import. It:
 
 ### The Problem {#the-problem}
 
-Modules in `modules/` need access to flake-level values like `localInputs` (to import other flake modules) and `projectLib` (for shared utilities). However, we can't use `_module.args` for this because:
+Feature modules sometimes need local flake inputs to determine their `imports`.
+Devshell feature modules also need to read `perSystem` settings.
 
-1. `_module.args` requires evaluating `config`
-2. `imports` are evaluated before `config` is available
-3. This creates an infinite recursion when modules try to use `localInputs` in their `imports`
+### The Solution: Registry Constructors {#the-solution-importtreeapply}
 
-```nix
-# ❌ This causes infinite recursion:
-{
-  _module.args.localInputs = inputs;  # Sets localInputs in config
-  imports = [ (import-tree ./modules) ];  # Modules need localInputs for imports
-}
-
-# Module tries to use localInputs:
-{localInputs, ...}: {
-  imports = [ localInputs.treefmt-nix.flakeModule ];  # 💥 Needs config before config exists
-}
-```
-
-### The Solution: importTreeApply {#the-solution-importtreeapply}
-
-We use `import-tree`'s `.map` function combined with a curried function pattern to inject arguments at import time, before the module system evaluates:
+Constructors capture explicit context before the ordinary module is evaluated:
 
 ```nix
-# flake-module.nix
-imports = [
-  (localInputs.import-tree.map
-    (modulePath: (import modulePath) {inherit localInputs projectLib;})
-    ./modules)
-];
+applyModules = context: registry:
+    map (makeModule: makeModule context) (lib.attrValues registry);
 ```
 
-This:
-
-1. Uses `import-tree` to discover all `.nix` files in `./modules`
-2. Maps over each discovered path
-3. Imports each file and immediately calls it with `{localInputs, projectLib}`
-4. The result is a standard flake-parts module that can be evaluated normally
+The flake level modules receives exactly the generic `flakeContext`: `{localInputs, projectLib, withSystem}`. The devshell level modules receives that context extended with `{self, customPkgs, perSysCfg, perSysOptions}`.
+`pkgs` and `system` are shared with devshell modules through `submoduleWith.specialArgs`.
 
 ### Module Pattern {#module-pattern}
 
-All modules in `modules/` must use the **nested function pattern**:
+A library fragment exports named constructors; **every constructor has a context stage**:
 
 ```nix
-# Outer function: receives injected arguments (localInputs, projectLib)
-# Use `...` to accept any arguments - only name the ones you need
-{localInputs, ...}:
-
-# Inner function: standard flake-parts module arguments
-{lib, flake-parts-lib, ...}:
-
-# Module body
+{...}:  # arguments passed by the library constructor
 {
-  imports = [
-    localInputs.treefmt-nix.flakeModule  # ✅ Can use localInputs here
-  ];
+    # flake level modules
+    modules.flake.example = {localInputs, ...}: # arguments `localInputs, projectLib, withSystem` passed by module constructor
+        {...}: # flake-parts module arguments + nix module arguments
+        {
+            # flake-parts module body
+            imports = [localInputs.treefmt-nix.flakeModule];
+        };
 
-  options.perSystem = ...;
+    # devshell level modules
+    modules.devshell.example = {...}: # arguments `self, customPkgs, perSysCfg, perSysOptions` passed by module constructor
+        {lib, config, pkgs, ...}: # nix module arguments
+        {
+            # nix module body
+            options.example.enable = lib.mkEnableOption "example tooling";
+            config = lib.mkIf config.example.enable {
+                packages = [pkgs.hello];
+            };
+        };
 }
 ```
 
-**Examples by usage:**
+### Aspect-oriented File Layout {#feature-file-layout}
 
-```nix
-# Module needs localInputs only:
-{localInputs, ...}: {lib, ...}: {
-  imports = [ localInputs.git-hooks-nix.flakeModule ];
-}
+The annotated [repository file tree](#repository-file-tree) shows where shared features and language-ecosystem fragments live.
 
-# Module needs projectLib only:
-{projectLib, ...}: {lib, ...}: {
-  config = projectLib.mkDevShellDefault true;
-}
+Keep both sides of a cross-scope feature in one fragment. For example, `modules/git-hooks.lib.nix` exports `modules.flake.gitHooks` and `modules.devshell.gitHooks`; `modules/file-generation.lib.nix`, `modules/formatting.lib.nix`, and `modules/global-startup.lib.nix` follow the same pattern. `core.lib.nix` exports only the shell foundation, while `gitignore.lib.nix` exports only a flake module.
 
-# Module needs both:
-{localInputs, projectLib, ...}: {lib, ...}: {
-  imports = [ localInputs.treefmt-nix.flakeModule ];
-  config = projectLib.mkDevShellDefault true;
-}
-
-# Module needs neither (still must accept args):
-{...}: {lib, ...}: {
-  options.perSystem = ...;
-}
-```
-
-## Module System {#module-system}
-
-The configuration has two layers:
-
-### 1. perSystem Modules (`modules/`) {#persystem-modules}
-
-These define **flake-wide options** that apply across all devshells:
-
-| Module                | Purpose                                      |
-| --------------------- | -------------------------------------------- |
-| `formatting.nix`      | treefmt configuration, `nix fmt` integration |
-| `git-hooks.nix`       | pre-commit hooks, `run-git-hooks` command    |
-| `gitignore.nix`       | Generated `.gitignore` file                  |
-| `file-generation.nix` | Nix-managed file generation                  |
-
-**Options declared here are accessed as:**
-
-```nix
-perSystem = {
-  formatting.enable = true;
-  git-hooks.enable = true;
-};
-```
-
-### 2. Devshell Submodules (`devshell-submodules/`) {#devshell-submodules}
-
-These define **per-devshell options** for language/tool support:
-
-| Submodule             | Purpose                                             |
-| --------------------- | --------------------------------------------------- |
-| `core.nix`            | Base shell options (`packages`, `env`, `startup`)   |
-| `dotnet.nix`          | .NET SDK and tooling                                |
-| `nix.nix`             | Nix formatting (nixfmt, deadnix)               |
-| `python.nix`          | Python (`withPackages`), Ruff lint fixes/formatting |
-| `json.nix`            | JSON formatting                                     |
-| `yaml.nix`            | YAML formatting                                     |
-| `markdown.nix`        | Markdown formatting                                 |
-| `xml.nix`             | XML formatting                                      |
-| `docker.nix`          | Dockerfile formatting                               |
-| `git-hooks.nix`       | Adds git-hooks package to shell                     |
-| `file-generation.nix` | Adds file generation package to shell               |
-
-**Options declared here are accessed as:**
-
-```nix
-perSystem = {
-    devshells.default = {
-        packages = [ pkgs.hello ];
-        dotnet.enable = true;
-        nix.enable = true;
-    };
-};
-```
-
-> **Note:** Devshell submodules use standard module syntax (not nested functions) because they receive arguments via `specialArgs` instead of import-time injection.
+The location f language-ecosystem fragments is organizational: nested directories are discovered automatically, and a fragment's module level exports still determine its evaluation scope.
 
 ## Communication Between Scopes {#communication-between-scopes}
 
-The two module layers need to communicate in both directions:
-
 ### Direction 1: Submodules → perSystem (Aggregation) {#submodules-to-persystem}
 
-Submodules can declare data that gets aggregated at the perSystem level.
+A devshell module declares contribution options normally. A flake module reads their evaluated values from the consumer's `config.devshells` and aggregates them.
 
-**Mechanism:** `devshell-submodule-extension`
-
-A perSystem module can inject options into all devshell submodules:
-
-```nix
-# modules/formatting.nix
-{localInputs, projectLib, ...}: {lib, ...}: {
-  imports = [ localInputs.treefmt-nix.flakeModule ];
-
-  options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
-    config.devshell-submodule-extension = [
-      ({lib, ...}: {
-        options.formatting.treefmt = lib.mkOption {
-          # Options that each devshell can set
-        };
-      })
-    ];
-  });
-}
-```
-
-Then it aggregates values from all devshells:
-
-```nix
-# modules/formatting.nix
-config.treefmt = lib.mkMerge (
-  lib.mapAttrsToList
-    (_: shellCfg: shellCfg.formatting.treefmt or {})
-    config.devshells
-);
-```
-
-**Example flow:**
-
-1. `modules/formatting.nix` injects `formatting.treefmt` option into submodules
-2. `devshell-submodules/nix.nix` sets `config.formatting.treefmt.programs.nixfmt.enable = true`
-3. `modules/formatting.nix` aggregates all `formatting.treefmt` values into the global `treefmt` config
+> ##### Formatting module that declares `formatting.treefmt` in every shell and consumes its config values to set perSystem level config
+>
+> 1.  `modules.devshell.formatting`, exported by `modules/formatting.lib.nix`, declares `formatting.treefmt` in every shell.
+> 2.  Language modules such as `modules.devshell.nix`, exported by `modules/language-ecosystems/nix.lib.nix`, set those shell-local options.
+> 3.  `modules.flake.formatting`, exported by the same fragment, merges the values into the consumer's system-wide treefmt configuration when formatting is enabled.
+>
+> The flake-side aggregation uses ordinary consumer `perSystem` configuration:
+>
+> ```nix
+> # Inside the formatting flake module's perSystem configuration
+> config = lib.mkIf config.formatting.enable {
+>    treefmt = lib.mkMerge (
+>        [
+>            {
+>                inherit pkgs;
+>                settings.excludes = config.formatting.excludes;
+>                programs.prettier.package = lib.mkDefault pkgs.prettier;
+>            }
+>        ]
+>        ++ lib.mapAttrsToList
+>            (_: shellCfg: shellCfg.formatting.treefmt or {})
+>            config.devshells
+>    );
+> };
+> ```
+>
+> ```nix
+> # Inside modules.devshell.formatting
+> {perSysOptions, ...}: {lib, pkgs, ...}: let
+>    treefmtOpts = perSysOptions.treefmt.type.getSubOptions [];
+>
+>    visibleSettingsOptions = ...; # options filtered
+>    visibleProgramOptions = ...; # options filtered
+> in {
+>    options.formatting.treefmt = lib.mkOption {
+>        type = lib.types.submodule {
+>            options = {
+>                settings = lib.mkOption {
+>                    type = lib.types.submodule {
+>                        freeformType = (pkgs.formats.toml {}).type;
+>                        options = visibleSettingsOptions;
+>                    };
+>                    default = {};
+>                };
+>                programs = lib.mkOption {
+>                    type = lib.types.submodule {options = visibleProgramOptions;};
+>                    default = {};
+>                };
+>            };
+>        };
+>        default = {};
+>    };
+> }
+> ```
 
 ### Direction 2: perSystem → Submodules (Dependencies) {#persystem-to-submodules}
 
-Submodules can access perSystem config and packages via `specialArgs`.
+The devshell module constructor context carries cross-scope settings and flake local packages.
 
-**Mechanism:** `perSysCfg` and `customPkgs`
+| Value                              | Origin and meaning                                                                             |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `localInputs`                      | Provider inputs, captured by `importApply`                                                     |
+| `projectLib`                       | Provider library constructed in the root module's `let`, independently of module configuration |
+| `withSystem`                       | Provider's flake-parts helper, captured by `importApply`                                       |
+| `self`                             | Consumer flake, received by the ordinary root module                                           |
+| `perSysCfg`                        | Consumer's enclosing `perSystem.config`                                                        |
+| `perSysOptions`                    | Consumer's enclosing `perSystem.options`                                                       |
+| `customPkgs`                       | Provider's system-specific `config.packages`                                                   |
+| `pkgs`                             | Consumer's package set, supplied as an ordinary shell argument through `specialArgs`           |
+| `config`, `options`, `name`, `lib` | Actual shell module arguments, not context fields                                              |
 
-```nix
-# flake-module.nix
-specialArgs = {
-  perSysCfg = config;           # Full perSystem config
-  customPkgs = withSystem system (
-    {config, ...}: config.packages
-  );
-};
-```
-
-**Example:**
-
-```nix
-# devshell-submodules/git-hooks.nix
-{
-  customPkgs,
-  perSysCfg,
-  ...
-}: {
-  packages = lib.mkIf perSysCfg.git-hooks.enable [
-    customPkgs.run-git-hooks           # Package from perSystem
-  ];
-
-  startup.git-hooks = lib.mkIf perSysCfg.git-hooks.enable {
-    text = perSysCfg.pre-commit.installationScript;  # Config from perSystem
-  };
-}
-```
+> ##### git-hooks fragment does devshell module configuration based on `perSystem` config
+>
+> ```nix
+> # modules/git-hooks.lib.nix (shell export)
+> {...}: {
+>    modules.devshell.gitHooks = {customPkgs, perSysCfg, ...}: {lib, ...}: {
+>        commands = lib.mkIf perSysCfg.git-hooks.enable [
+>            {
+>                name = "run-git-hooks";
+>                package = customPkgs.run-git-hooks;
+>                category = "development";
+>                help = "Run the configured Git hooks.";
+>            }
+>        ];
+>
+>        startup.git-hooks = lib.mkIf perSysCfg.git-hooks.enable {
+>            text = perSysCfg.pre-commit.installationScript;
+>        };
+>    };
+> }
+> ```
 
 ## Adding New Features {#adding-new-features}
 
+Add a uniquely named `*.lib.nix` fragment under `modules/`: put shared infrastructure and cross-scope concerns directly in that directory, and language/tool-specific features under `modules/language-ecosystems/`. Extend an existing fragment when the change belongs to the same concern, keeping any flake and shell exports together.
+
 ### Adding a perSystem Option {#adding-persystem-option}
 
-Create a new file in `modules/` using the nested function pattern:
+For example, a feature exposing an optional package could be:
 
 ```nix
-# modules/my-feature.nix
-
-# Outer function: accept injected args (use only what you need)
-{localInputs, ...}:
-
-# Inner function: standard flake-parts module
-{
-  flake-parts-lib,
-  lib,
-  ...
-}: {
-  # Optional: import flake modules
-  imports = [
-    # localInputs.some-flake.flakeModule
-  ];
-
-  options.perSystem = flake-parts-lib.mkPerSystemOption ({
-    config,
-    pkgs,
-    ...
-  }: {
-    options.my-feature = {
-      enable = lib.mkEnableOption "my feature";
-      # ... more options
+# modules/hello.lib.nix
+{...}: {
+    modules.flake.hello = {...}: {flake-parts-lib, lib, ...}: {
+        options.perSystem = flake-parts-lib.mkPerSystemOption (
+            {config, pkgs, ...}: {
+                options.hello.enable = lib.mkEnableOption "the hello package";
+                config = lib.mkIf config.hello.enable {
+                    packages.hello = pkgs.hello;
+                };
+            }
+        );
     };
-
-    config = lib.mkIf config.my-feature.enable {
-      # ... implementation
-    };
-  });
 }
 ```
 
 ### Adding a Devshell Submodule {#adding-devshell-submodule}
 
-Create a new file in `devshell-submodules/` (standard module syntax, no nesting needed):
+A shell-only language/tool feature belongs under `modules/language-ecosystems/`. Shared shell infrastructure belongs directly under `modules/`, as `core.lib.nix` does.
 
 ```nix
-# devshell-submodules/my-tool.nix
-{
-  lib,
-  config,
-  pkgs,
-  perSysCfg,    # Access perSystem config
-  customPkgs,   # Access perSystem packages
-  ...
-}: {
-  options.my-tool = {
-    enable = lib.mkEnableOption "my tool support";
-  };
-
-  config = lib.mkIf config.my-tool.enable {
-    packages = [ pkgs.my-tool ];
-
-    # If using treefmt integration:
-    formatting.treefmt.programs.my-formatter.enable = true;
-  };
+# modules/language-ecosystems/hello.lib.nix
+{...}: {
+    modules.devshell.hello = {...}: {lib, config, pkgs, ...}: {
+        options.hello.enable = lib.mkEnableOption "hello in this shell";
+        config = lib.mkIf config.hello.enable {
+            packages = [pkgs.hello];
+        };
+    };
 }
 ```
 
-### Adding Submodule Options from perSystem {#adding-submodule-options-from-persystem}
+Consumers can then set `perSystem.devshells.default.hello.enable = true`.
 
-When perSystem needs data from submodules:
+### Adding Paired Flake and Devshell Modules {#adding-submodule-options-from-persystem}
+
+When a feature spans both system configuration and devshell configuration, export both modules from one library fragment.
 
 ```nix
-# modules/my-aggregator.nix
-{...}: {flake-parts-lib, lib, ...}: {
-  options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
-    config = {
-      # 1. Inject options into submodules
-      devshell-submodule-extension = [
-        ({lib, ...}: {
-          options.my-aggregator.data = lib.mkOption {
+# modules/my-aggregator.lib.nix
+{...}: {
+    modules.flake.myAggregator = {...}: {flake-parts-lib, lib, ...}: {
+        options.perSystem = flake-parts-lib.mkPerSystemOption ({config, ...}: {
+            options.my-aggregator.allData = lib.mkOption {
+                type = lib.types.listOf lib.types.str;
+                readOnly = true;
+            };
+
+            config.my-aggregator.allData = lib.concatMap
+                (shellCfg: shellCfg.my-aggregator.data)
+                (lib.attrValues config.devshells);
+        });
+    };
+
+    modules.devshell.myAggregator = {...}: {lib, ...}: {
+        options.my-aggregator.data = lib.mkOption {
             type = lib.types.listOf lib.types.str;
             default = [];
-          };
-        })
-      ];
-
-      # 2. Aggregate from all devshells
-      my-aggregator.allData = lib.flatten (
-        lib.mapAttrsToList
-          (_: shellCfg: shellCfg.my-aggregator.data)
-          config.devshells
-      );
+        };
     };
-  });
 }
 ```
 
-## Key Files Reference {#key-files-reference}
-
-| File                           | Purpose                                    |
-| ------------------------------ | ------------------------------------------ |
-| `flake.nix`                    | Flake definition, dogfooding, exports      |
-| `flake-module.nix`             | Main module entry point for consumers      |
-| `lib.nix`                      | Shared utility functions                   |
-| `pkgs.nix`                     | Package overlays                           |
-| `modules/`                     | perSystem-level modules (nested functions) |
-| `devshell-submodules/`         | Per-devshell submodules (standard modules) |
-| `devshell-submodules/core.nix` | Base shell options, builds final shell     |
-| `packages/`                    | Custom packages exposed by the flake       |
+If the shell schema depends on upstream `perSystem` options, capture `perSysOptions` in the shell constructor, as formatting does. If the shell needs a project-wide setting, capture `perSysCfg`.

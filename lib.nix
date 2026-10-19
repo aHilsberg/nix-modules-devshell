@@ -70,7 +70,7 @@ let
             '';
 
     libFiles = inputs.import-tree (i: i.withLib lib) (
-        i: i.filter (path: lib.hasSuffix ".lib.nix" path && !(lib.hasInfix "/submodules/" path))
+        i: i.filter (path: lib.hasSuffix ".lib.nix" path)
     ) (i: i.leaves ./.);
 
     buildProjectLib =
