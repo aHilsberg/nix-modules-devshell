@@ -20,6 +20,8 @@
                     name,
                     # flake module that declares the devshell configuration
                     module,
+                    # provider module to exercise, optionally bound to fixture packages
+                    flakeModule ? self.flakeModule,
                     # non-empty list containing the executable and its arguments
                     command,
                     # devShells attribute to start
@@ -57,7 +59,7 @@
                         systems = [ system ];
                         module = { ... }: {
                             imports = [
-                                self.flakeModule
+                                flakeModule
                                 module
                             ];
                             flake.outPath = fixtureRepo;
@@ -155,8 +157,11 @@
                                         cp -R ${fixtureRepo}/. "$workspace"
                                         cp -R ${samples} "$workspace/samples"
                                         chmod -R u+w "$workspace"
+                                        mkdir -p "$workspace/.home"
                                         (
                                             cd "$workspace"
+                                            # ReSharper can stall on shutdown with Nix's unwritable default HOME.
+                                            export HOME="$workspace/.home"
                                             export PRJ_ROOT="$workspace"
                                             ${lib.getExe formatter} --no-cache samples
                                         )

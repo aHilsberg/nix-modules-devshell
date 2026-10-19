@@ -1,4 +1,4 @@
-{ projectLib, ... }: {
+{ projectLib, lib, ... }: {
     perSystem =
         {
             pkgs,
@@ -24,7 +24,7 @@
                             system
                             ;
                     };
-                    inherit (testLib) devshell;
+                    inherit (testLib) asserts devshell;
 
                     helloStartupModule.perSystem.devshells.default.startup.hello.text = ''
                         echo "hello from startup"
@@ -41,6 +41,33 @@
                 in
                 {
                     core = {
+                        formatting-workspace-providesIsolatedWritableHome = test.asserts {
+                            tags = [ "formatting" ];
+                            # First assert normally snapshots the formatter output, but we only care about it running
+                            # successfully.
+                            assertions = lib.tail (
+                                asserts.formatingAsExpected {
+                                    name = "core-formatting-workspace-providesIsolatedWritableHome";
+                                    snapshotPathRelativeTo = ./.;
+                                    filetreeToFormat = pkgs.writeTextDir "sample.txt" "unchanged\n";
+                                    formatterModule.perSystem.formatter = pkgs.writeShellApplication {
+                                        name = "check-formatter-home";
+                                        runtimeInputs = [ pkgs.coreutils ];
+                                        text = ''
+                                            if [[ "$HOME" != "$PWD/"* || ! -d "$HOME" || ! -w "$HOME" ]]; then
+                                                printf '%s\n' 'Formatter HOME must be an isolated writable directory in the workspace.' >&2
+                                                exit 1
+                                            fi
+                                            if [[ -e "$HOME/formatter-probe" ]]; then
+                                                printf '%s\n' 'Formatting passes must not share HOME state.' >&2
+                                                exit 1
+                                            fi
+                                            printf 'writable\n' > "$HOME/formatter-probe"
+                                        '';
+                                    };
+                                }
+                            );
+                        };
                         startup-echoScript-writesExpectedOutput = test.asserts {
                             assertions = [
                                 (that
