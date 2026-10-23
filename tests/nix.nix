@@ -111,6 +111,30 @@
                             };
                         };
 
+                        formatting-noEditorConfig-nixFmtUsesDefaults = test.asserts {
+                            tags = [ "formatting" ];
+                            assertions = asserts.formatingAsExpected {
+                                name = "formatting-noEditorConfig-nixFmtUsesDefaults";
+                                formatterModule = nixfmtFormatterModule;
+                                filetreeToFormat = ./fixtures/data/nix;
+                                snapshotPathRelativeTo = ./.;
+                            };
+                        };
+                        formatting-missingIndentSize-usesDefaults = test.asserts {
+                            tags = [ "formatting" ];
+                            assertions = asserts.formatingAsExpected {
+                                name = "formatting-missingIndentSize-usesDefaults";
+                                formatterModule = nixfmtFormatterModule;
+                                filetreeToFormat = ./fixtures/data/nix;
+                                snapshotPathRelativeTo = ./.;
+                                repoContent.editorConfig = ''
+                                    root = true
+
+                                    [*.nix]
+                                    end_of_line = lf
+                                '';
+                            };
+                        };
                         formatting-nixfmt-formatsWithFourSpaces = test.asserts {
                             tags = [ "formatting" ];
                             assertions = asserts.formatingAsExpected {

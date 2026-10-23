@@ -103,7 +103,7 @@
                         nixfmt = {
                             enable = config.nix.formatter == "nixfmt";
                             priority = 1;
-                            indent = builtins.fromJSON indentSize;
+                            indent = if indentSize == null then null else builtins.fromJSON indentSize;
                         };
                     };
                 };
