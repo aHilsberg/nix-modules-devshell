@@ -1,6 +1,6 @@
 ---
-role:
-    - developers
+roles:
+    - developer
 topic:
     - xml
     - formatting

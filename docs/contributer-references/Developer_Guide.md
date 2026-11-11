@@ -1,6 +1,7 @@
 ---
-role:
-    - maintainers
+roles:
+    - advanced developer
+    - maintainer
 type: overview
 topic:
     - module-system
@@ -10,6 +11,12 @@ last-substantial-update: "2026-10-19"
 # Developer Guide {#developer-guide}
 
 This guide explains the internal architecture of `nix-modules-devshell` for developers who want to understand, contribute to, or extend the codebase. File paths are relative to the `nix-modules-devshell` repository.
+
+Documentation roles identify each page's primary audience:
+
+- `developer`: someone using or interacting with `nix-modules-devshell` without changing it.
+- `advanced developer`: a consumer extending or understanding the inner workings of `nix-modules-devshell`.
+- `maintainer`: a developer working on the library/project itself.
 
 ## Table of Contents {#table-of-contents}
 
@@ -76,8 +83,7 @@ nix-modules-devshell/
 ├── docs/                           # mdBook chapters and reference material
 │   ├── contributer-references/     # Architecture and contribution guides
 │   ├── modules/                    # Ecosystem user guides
-│   ├── options/                    # Option reference (generated)
-│   └── source/                     # Nix sources for documentation includes (generated)
+│   └── options/                    # Option reference (generated)
 ├── README.md                       # Consumer overview and quick start
 ├── .editorconfig                   # Editing and formatter policy
 ├── .data/                          # Local generated output and runtime data (ignored)

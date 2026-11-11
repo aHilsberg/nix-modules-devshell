@@ -1,6 +1,7 @@
 ---
-role:
-    - maintainers
+roles:
+    - advanced developer
+    - maintainer
 topic:
     - nix-conventions
 type: convention

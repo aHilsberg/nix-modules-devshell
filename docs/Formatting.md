@@ -1,7 +1,8 @@
 ---
-role:
-    - developers
-    - maintainers
+roles:
+    - developer
+    - advanced developer
+    - maintainer
 type: how_to
 topic:
     - formatting
