@@ -137,4 +137,6 @@ nix run .#generate-nix-managed-files
 
 ## License
 
-See [LICENSE](./LICENSE) for details.
+Licensed under the GNU General Public License, version 3 only
+(`GPL-3.0-only`). See [LICENSE.md](./LICENSE.md) for the terms, scope, and
+AI-use information.

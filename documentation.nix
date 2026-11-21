@@ -134,6 +134,7 @@
                         chmod -R u+w docs
                         mkdir -p docs/options
                         sed 's|(\./docs/|(|g' ${./README.md} > docs/README.md
+                        cp ${./LICENSE.md} docs/LICENSE.md
                         cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
                         mdbook build docs --dest-dir "$out"
                     '';
@@ -149,6 +150,7 @@
 
                         mkdir -p docs/options
                         sed 's|(\./docs/|(|g' README.md > docs/README.md
+                        cp LICENSE.md docs/LICENSE.md
                         cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
                         export PATH="${lib.makeBinPath [ pkgs.mdbook-yml-header ]}:$PATH"
                         exec ${lib.getExe pkgs.mdbook} serve docs \

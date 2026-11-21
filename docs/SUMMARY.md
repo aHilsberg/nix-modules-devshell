@@ -26,3 +26,4 @@
 
 - [Developer guide](./contributer-references/Developer_Guide.md)
 - [Nix project conventions](./contributer-references/Nix_Project_Conventions.md)
+- [License](LICENSE.md)
