@@ -7,7 +7,6 @@
             ...
         }:
         {
-
             options.docker = {
                 enable = lib.mkEnableOption "Docker formatting for this shell";
             };

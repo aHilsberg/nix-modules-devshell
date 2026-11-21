@@ -7,7 +7,6 @@
             ...
         }:
         {
-
             options.json = {
                 enable = lib.mkEnableOption "JSON formatting for this shell";
             };

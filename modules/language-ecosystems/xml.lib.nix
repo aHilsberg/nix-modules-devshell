@@ -7,7 +7,6 @@
             ...
         }:
         {
-
             options.xml = {
                 enable = lib.mkEnableOption "XML formatting for this shell";
             };

@@ -1,9 +1,9 @@
 ---
-role:
-    - maintainers
+audience:
+    - contributor
+type: convention
 topic:
     - nix-conventions
-type: convention
 last-substantial-update: "2026-10-18"
 ---
 

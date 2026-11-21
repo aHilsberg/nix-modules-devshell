@@ -64,7 +64,6 @@
             '';
         in
         {
-
             options.nix = {
                 enable = lib.mkEnableOption "Nix formatting for this shell";
                 formatter = lib.mkOption {

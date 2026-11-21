@@ -1,10 +1,10 @@
 ---
-role:
-    - developers
+audience:
+    - developer
+type: reference
 topic:
     - dotnet
     - snapshot-testing
-type: reference
 last-substantial-update: "2026-10-18"
 ---
 

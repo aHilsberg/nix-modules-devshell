@@ -1,10 +1,10 @@
 ---
-role:
-    - developers
+audience:
+    - developer
+type: how_to
 topic:
     - installation
     - direnv
-type: how_to
 last-substantial-update: "2026-04-16"
 ---
 
@@ -62,7 +62,7 @@ Add the input and import the module:
 
 ### Consuming the Devshell Overlay {#consuming-the-devshell-overlay}
 
-When using this flake module, you **must** consume the devshell overlay that is exposed by this flake. The overlay is required for the devshell functionality to work properly.
+When using this flake module, you **must** consume the devshell overlay that is exposed by this flake.
 
 **Important:** The overlay must be applied to your `pkgs` instance.
 

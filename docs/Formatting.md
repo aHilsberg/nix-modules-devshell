@@ -1,7 +1,7 @@
 ---
-role:
-    - developers
-    - maintainers
+audience:
+    - developer
+    - contributor
 type: how_to
 topic:
     - formatting

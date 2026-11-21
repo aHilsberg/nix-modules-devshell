@@ -93,7 +93,7 @@
                     if builtins.hasAttr (lib.showOption opt.loc) coreOptionsDoc.optionsNix then
                         opt // { visible = false; }
                     else
-                        opt;
+                        opt // { declarations = [ ]; };
             };
             optionsCommonMark = optionsDoc.optionsCommonMark.overrideAttrs {
                 extraArgs = [
@@ -106,13 +106,12 @@
             optionsMarkdown = pkgs.runCommand "nix-modules-devshell-options.md" { } ''
                 cat > "$out" <<'EOF'
                 ---
-                role:
-                  - developers
-                  - maintainers
+                audience:
+                  - developer
+                type: reference
                 topic:
                   - nix-options
                 last-substantial-update: null
-                type: reference
                 ---
 
                 EOF
@@ -133,11 +132,9 @@
                     ''
                         cp -r ${./docs} docs
                         chmod -R u+w docs
-                        mkdir -p docs/options docs/source
+                        mkdir -p docs/options
                         sed 's|(\./docs/|(|g' ${./README.md} > docs/README.md
                         cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
-                        cp ${./flake-module.nix} docs/source/flake-module.nix
-                        cp -r ${./modules} docs/source/
                         mdbook build docs --dest-dir "$out"
                     '';
             packages.docsMdBook = config.packages.documentation;
@@ -150,11 +147,9 @@
                     command = ''
                         set -euo pipefail
 
-                        mkdir -p docs/options docs/source
+                        mkdir -p docs/options
                         sed 's|(\./docs/|(|g' README.md > docs/README.md
                         cat ${optionsMarkdown} > docs/options/Nix_Modules_Devshell.md
-                        cp flake-module.nix docs/source/flake-module.nix
-                        cp -r modules docs/source/
                         export PATH="${lib.makeBinPath [ pkgs.mdbook-yml-header ]}:$PATH"
                         exec ${lib.getExe pkgs.mdbook} serve docs \
                             --hostname 127.0.0.1 --port "''${DOCS_PORT:-8001}" "$@"

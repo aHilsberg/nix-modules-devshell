@@ -1,36 +1,22 @@
 ---
-role:
-    - maintainers
+audience:
+    - contributor
+    - maintainer
 type: overview
 topic:
     - module-system
-last-substantial-update: "2026-10-19"
+last-substantial-update: "2026-11-21"
 ---
 
 # Developer Guide {#developer-guide}
 
 This guide explains the internal architecture of `nix-modules-devshell` for developers who want to understand, contribute to, or extend the codebase. File paths are relative to the `nix-modules-devshell` repository.
 
-## Table of Contents {#table-of-contents}
-
-- [Overview](#overview)
-- [Repository File Tree](#repository-file-tree)
-- [Entry Points](#entry-points)
-    - [`flake.nix`](#flake-nix)
-    - [`lib.nix`](#lib-nix)
-    - [`flake-module.nix`](#flake-module-nix)
-- [Module Argument Injection](#module-argument-injection)
-    - [The Problem](#the-problem)
-    - [The Solution: Registry Constructors](#the-solution-importtreeapply)
-    - [Module Pattern](#module-pattern)
-    - [Aspect-oriented File Layout](#feature-file-layout)
-- [Communication Between Scopes](#communication-between-scopes)
-    - [Direction 1: Submodules → perSystem (Aggregation)](#submodules-to-persystem)
-    - [Direction 2: perSystem → Submodules (Dependencies)](#persystem-to-submodules)
-- [Adding New Features](#adding-new-features)
-    - [Adding a perSystem Option](#adding-persystem-option)
-    - [Adding a Devshell Submodule](#adding-devshell-submodule)
-    - [Adding Paired Flake and Devshell Modules](#adding-submodule-options-from-persystem)
+>Documentation uses the `audience` field to identify the reader's task in relation to `nix-modules-devshell`, not their experience level:
+>
+>- `developer`: someone using the documented interfaces, tools, or supported extension points without changing the >project's implementation.
+>- `contributor`: someone changing the project's implementation, tests, or documentation.
+>- `maintainer`: someone with ongoing responsibility for reviews, releases, compatibility decisions, and long-term maintenance.
 
 ## Overview {#overview}
 
@@ -76,8 +62,7 @@ nix-modules-devshell/
 ├── docs/                           # mdBook chapters and reference material
 │   ├── contributer-references/     # Architecture and contribution guides
 │   ├── modules/                    # Ecosystem user guides
-│   ├── options/                    # Option reference (generated)
-│   └── source/                     # Nix sources for documentation includes (generated)
+│   └── options/                    # Option reference (generated)
 ├── README.md                       # Consumer overview and quick start
 ├── .editorconfig                   # Editing and formatter policy
 ├── .data/                          # Local generated output and runtime data (ignored)
@@ -223,7 +208,7 @@ The annotated [repository file tree](#repository-file-tree) shows where shared f
 
 Keep both sides of a cross-scope feature in one fragment. For example, `modules/git-hooks.lib.nix` exports `modules.flake.gitHooks` and `modules.devshell.gitHooks`; `modules/file-generation.lib.nix`, `modules/formatting.lib.nix`, and `modules/global-startup.lib.nix` follow the same pattern. `core.lib.nix` exports only the shell foundation, while `gitignore.lib.nix` exports only a flake module.
 
-The location f language-ecosystem fragments is organizational: nested directories are discovered automatically, and a fragment's module level exports still determine its evaluation scope.
+The location for language-ecosystem fragments is organizational: nested directories are discovered automatically, and a fragment's module level exports still determine its evaluation scope.
 
 ## Communication Between Scopes {#communication-between-scopes}
 
@@ -231,7 +216,8 @@ The location f language-ecosystem fragments is organizational: nested directorie
 
 A devshell module declares contribution options normally. A flake module reads their evaluated values from the consumer's `config.devshells` and aggregates them.
 
-> ##### Formatting module that declares `formatting.treefmt` in every shell and consumes its config values to set perSystem level config
+> [!example] 
+> Formatting module that declares `formatting.treefmt` in every shell and consumes its config values to set perSystem level config
 >
 > 1.  `modules.devshell.formatting`, exported by `modules/formatting.lib.nix`, declares `formatting.treefmt` in every shell.
 > 2.  Language modules such as `modules.devshell.nix`, exported by `modules/language-ecosystems/nix.lib.nix`, set those shell-local options.
@@ -252,7 +238,7 @@ A devshell module declares contribution options normally. A flake module reads t
 >        ]
 >        ++ lib.mapAttrsToList
 >            (_: shellCfg: shellCfg.formatting.treefmt or {})
->            config.devshells
+>            config.devshells # <- aggregates/accesses devshell module config values
 >    );
 > };
 > ```
@@ -260,6 +246,7 @@ A devshell module declares contribution options normally. A flake module reads t
 > ```nix
 > # Inside modules.devshell.formatting
 > {perSysOptions, ...}: {lib, pkgs, ...}: let
+>    # this is direction 2: perSystem → Submodules
 >    treefmtOpts = perSysOptions.treefmt.type.getSubOptions [];
 >
 >    visibleSettingsOptions = ...; # options filtered
@@ -302,7 +289,8 @@ The devshell module constructor context carries cross-scope settings and flake l
 | `pkgs`                             | Consumer's package set, supplied as an ordinary shell argument through `specialArgs`           |
 | `config`, `options`, `name`, `lib` | Actual shell module arguments, not context fields                                              |
 
-> ##### git-hooks fragment does devshell module configuration based on `perSystem` config
+> [!example]
+> git-hooks fragment does devshell module configuration based on `perSystem` config
 >
 > ```nix
 > # modules/git-hooks.lib.nix (shell export)
@@ -364,7 +352,7 @@ A shell-only language/tool feature belongs under `modules/language-ecosystems/`.
 }
 ```
 
-Consumers can then set `perSystem.devshells.default.hello.enable = true`.
+Consumers can then set `perSystem.devshells.*.hello.enable = *`.
 
 ### Adding Paired Flake and Devshell Modules {#adding-submodule-options-from-persystem}
 

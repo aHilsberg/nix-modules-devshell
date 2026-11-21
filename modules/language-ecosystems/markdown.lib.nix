@@ -7,7 +7,6 @@
             ...
         }:
         {
-
             options.markdown = {
                 enable = lib.mkEnableOption "Markdown formatting for this shell";
             };

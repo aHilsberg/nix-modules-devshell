@@ -1,6 +1,6 @@
 ---
-role:
-    - developers
+audience:
+    - developer
 type: overview
 topic:
     - devshell
@@ -28,7 +28,7 @@ unify and simplify development shell configuration of consumer projects.
 
 > See [Installation](./docs/Installation.md) for details, and how to setup automatic entry into a development shell when entering a directory.
 >
-> See [Quick Start](./docs/Getting_Started.md) for a intro into the capabilities provided by nix-modules-devshell.
+> See [Getting Started](./docs/Getting_Started.md) for a intro into the capabilities provided by nix-modules-devshell.
 
 ### Install
 
