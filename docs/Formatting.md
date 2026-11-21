@@ -5,7 +5,7 @@ audience:
 type: how_to
 topic:
     - formatting
-last-substantial-update: "2026-10-18"
+last-substantial-update: "2026-11-21"
 ---
 
 ## Formatting {#formatting}
@@ -52,6 +52,7 @@ Since we use Nix, `treefmt-nix` enables:
 | ------------------------------- | ------------------------------------ | --------------------- |
 | [Nix](modules/Nix.md)           | nixfmt or Alejandra; deadnix linting | Build-time mapping    |
 | [Python](modules/Python.md)     | Ruff lint fixes and formatting       | Build-time mapping    |
+| [Rust](modules/Rust.md)         | rustfmt                              | Build-time mapping    |
 | [.NET](modules/Dotnet.md)       | JetBrains ReSharper `cleanupcode`    | Native, per file      |
 | [XML/RESX](modules/Xml.md)      | Prettier with the XML plugin         | Native, per file      |
 | [Markdown](modules/Markdown.md) | Prettier                             | Native, per file      |

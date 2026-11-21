@@ -13,6 +13,7 @@
 - [Markdown module](modules/Markdown.md)
 - [Nix module](modules/Nix.md)
 - [Python module](modules/Python.md)
+- [Rust module](modules/Rust.md)
 - [XML module](modules/Xml.md)
 - [YAML module](modules/Yaml.md)
 

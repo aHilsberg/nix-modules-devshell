@@ -5,7 +5,7 @@ type: quick_start
 topic:
     - devshell
     - formatting
-last-substantial-update: "2026-10-18"
+last-substantial-update: "2026-11-21"
 ---
 
 # Getting Started {#getting-started}
@@ -89,7 +89,7 @@ nix fmt -- --check .
 nix fmt -- --quiet
 ```
 
-> [!note] 
+> [!note]
 > The forwarded arguments must be supported by the formatter configured in your flake.
 
 ## Nix-Managed Files {#nix-managed-files}
@@ -138,15 +138,16 @@ If you see an error about managed files being modified, regenerate them with the
 
 The devshell supports various language and tool modules that can be enabled:
 
-| Module                              | Description                               |
-| ----------------------------------- | ----------------------------------------- |
-| [`dotnet`](./modules/Dotnet.md)     | .NET SDK and tooling                      |
-| [`json`](./modules/Json.md)         | JSON formatting with Prettier             |
-| [`markdown`](./modules/Markdown.md) | Markdown formatting with Prettier         |
-| [`yaml`](./modules/Yaml.md)         | YAML formatting with Prettier             |
-| [`xml`](./modules/Xml.md)           | XML formatting with Prettier (plugin-xml) |
-| [`docker`](./modules/Docker.md)     | Dockerfile formatting with dockerfmt      |
-| [`nix`](./modules/Nix.md)           | Nix formatting with nixfmt and deadnix    |
+| Module                              | Description                                             |
+| ----------------------------------- | ------------------------------------------------------- |
+| [`dotnet`](./modules/Dotnet.md)     | .NET SDK and tooling                                    |
+| [`json`](./modules/Json.md)         | JSON formatting with Prettier                           |
+| [`markdown`](./modules/Markdown.md) | Markdown formatting with Prettier                       |
+| [`yaml`](./modules/Yaml.md)         | YAML formatting with Prettier                           |
+| [`xml`](./modules/Xml.md)           | XML formatting with Prettier (plugin-xml)               |
+| [`docker`](./modules/Docker.md)     | Dockerfile formatting with dockerfmt                    |
+| [`nix`](./modules/Nix.md)           | Nix formatting with nixfmt and deadnix                  |
+| [`rust`](./modules/Rust.md)         | Rust compiler, Cargo, Clippy, rustfmt, and cargo-expand |
 
 ### Enabling Modules {#enabling-modules}
 

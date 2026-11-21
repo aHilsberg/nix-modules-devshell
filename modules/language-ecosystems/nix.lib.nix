@@ -22,7 +22,9 @@
                             nativeBuildInputs = [ pkgs.editorconfig-core-c ];
                         }
                         ''
-                            ${lib.getExe' pkgs.editorconfig-core-c "editorconfig"} ${self + "/flake.nix"} > "$out"
+                            ${lib.getExe' pkgs.editorconfig-core-c "editorconfig"} ${
+                                lib.escapeShellArg (toString (self + "/flake.nix"))
+                            } > "$out"
                         ''
                 else
                     pkgs.writeText "editorconfig-flake-nix" "";

@@ -12,11 +12,11 @@ last-substantial-update: "2026-11-21"
 
 This guide explains the internal architecture of `nix-modules-devshell` for developers who want to understand, contribute to, or extend the codebase. File paths are relative to the `nix-modules-devshell` repository.
 
->Documentation uses the `audience` field to identify the reader's task in relation to `nix-modules-devshell`, not their experience level:
+> Documentation uses the `audience` field to identify the reader's task in relation to `nix-modules-devshell`, not their experience level:
 >
->- `developer`: someone using the documented interfaces, tools, or supported extension points without changing the >project's implementation.
->- `contributor`: someone changing the project's implementation, tests, or documentation.
->- `maintainer`: someone with ongoing responsibility for reviews, releases, compatibility decisions, and long-term maintenance.
+> - `developer`: someone using the documented interfaces, tools, or supported extension points without changing the >project's implementation.
+> - `contributor`: someone changing the project's implementation, tests, or documentation.
+> - `maintainer`: someone with ongoing responsibility for reviews, releases, compatibility decisions, and long-term maintenance.
 
 ## Overview {#overview}
 
@@ -216,7 +216,7 @@ The location for language-ecosystem fragments is organizational: nested director
 
 A devshell module declares contribution options normally. A flake module reads their evaluated values from the consumer's `config.devshells` and aggregates them.
 
-> [!example] 
+> [!example]
 > Formatting module that declares `formatting.treefmt` in every shell and consumes its config values to set perSystem level config
 >
 > 1.  `modules.devshell.formatting`, exported by `modules/formatting.lib.nix`, declares `formatting.treefmt` in every shell.

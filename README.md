@@ -4,7 +4,7 @@ audience:
 type: overview
 topic:
     - devshell
-last-substantial-update: null
+last-substantial-update: "2026-11-21"
 ---
 
 # nix-modules-devshell
@@ -126,6 +126,7 @@ nix run .#generate-nix-managed-files
 | `docker`   | Dockerfile formatting with dockerfmt                                                          |
 | `nix`      | Nix formatting (nixfmt) and linting (deadnix)                                                 |
 | `python`   | Python interpreter environment, Ruff lint fixes and formatting                                |
+| `rust`     | Rust compiler, Cargo, Clippy, rustfmt, and other tooling                                      |
 
 ## References / Projects that have been build upon
 
