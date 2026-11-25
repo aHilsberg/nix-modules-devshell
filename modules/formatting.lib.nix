@@ -85,6 +85,7 @@
         {
             lib,
             pkgs,
+            options,
             ...
         }:
         let
@@ -130,6 +131,8 @@
                         };
                     };
                 };
+                # Forward definitions, not evaluated defaults, retaining nested priorities.
+                apply = _: lib.mkAliasDefinitions options.formatting.treefmt;
                 default = { };
                 description = ''
                     treefmt configuration included in all devshells.

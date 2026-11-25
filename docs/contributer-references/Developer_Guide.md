@@ -214,7 +214,7 @@ The location for language-ecosystem fragments is organizational: nested director
 
 ### Direction 1: Submodules → perSystem (Aggregation) {#submodules-to-persystem}
 
-A devshell module declares contribution options normally. A flake module reads their evaluated values from the consumer's `config.devshells` and aggregates them.
+A devshell module declares contribution options normally. A flake module reads their values from the consumer's `config.devshells` and aggregates them.
 
 > [!example]
 > Formatting module that declares `formatting.treefmt` in every shell and consumes its config values to set perSystem level config
@@ -245,7 +245,7 @@ A devshell module declares contribution options normally. A flake module reads t
 >
 > ```nix
 > # Inside modules.devshell.formatting
-> {perSysOptions, ...}: {lib, pkgs, ...}: let
+> {perSysOptions, ...}: {lib, pkgs, options, ...}: let
 >    # this is direction 2: perSystem → Submodules
 >    treefmtOpts = perSysOptions.treefmt.type.getSubOptions [];
 >
@@ -268,6 +268,7 @@ A devshell module declares contribution options normally. A flake module reads t
 >                };
 >            };
 >        };
+>        apply = _: lib.mkAliasDefinitions options.formatting.treefmt;
 >        default = {};
 >    };
 > }

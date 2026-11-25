@@ -112,7 +112,7 @@ The aggregation above runs in the consumer's `perSystem` scope inside `modules.f
 
 1. **Shell schema**: `modules.devshell.formatting` derives `formatting.treefmt` from `perSysOptions.treefmt.type.getSubOptions []`, where `perSysOptions` is the consumer's `perSystem` option tree. It retains the existing filtered, visible/writable settings and program options, excluding `_module` and `global` from settings. This is a normal shell module declaration, not option injection from `perSystem`.
 2. **Shell-specific configuration**: Each devshell (e.g., backend, frontend, docs) can enable formatters based on the languages/tools it needs
-3. **Configuration merging**: `modules.flake.formatting` merges all `formatting.treefmt` values from the consumer's `config.devshells` into one global treefmt configuration
+3. **Configuration merging**: `formatting.treefmt` forwards its original definitions using `lib.mkAliasDefinitions`. `modules.flake.formatting` merges and validates these contributions in one global treefmt configuration, preserving nested override priorities and list ordering. Defaults are applied only in that global configuration, so an unused formatter in one shell cannot disable a formatter enabled by another shell.
 4. **Project-wide formatting**: When you run `treefmt` or `nix fmt`, it formats **all files in the project** that match enabled formatters, regardless of which shell enabled them
 
 **Example scenario**:
